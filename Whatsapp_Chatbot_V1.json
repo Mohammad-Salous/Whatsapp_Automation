@@ -1,0 +1,1640 @@
+{
+  "name": "Whatsapp_Chatbot1(Salous_WHP_Bot)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2480,
+        192
+      ],
+      "id": "4225200b-24eb-4fd0-9fcf-b7f1f8cc37bb",
+      "name": "WhatsApp Trigger",
+      "webhookId": "88f0429f-4309-4f64-9170-914ab238258e"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ \n  $json.Section_Name \n    ? \"ملف جديد/محدث تم العثور عليه:\\n- اسم الملف: \" + ($json.Text || '') + \"\\n- السكشن: \" + ($json.Section_Name || '') + \"\\n- الرابط: \" + ($json.URLS || '') + \"\\n\\nسؤال/رسالة المستخدم: \" + ($('WhatsApp Trigger').first()?.json?.messages?.[0]?.text?.body || $json.Text || '')\n    : ($json.Text || JSON.stringify($json))\n}}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=You are a highly intelligent, polite, and helpful WhatsApp AI Assistant for University Moodle & Daily Student Support.\nYour goal is to process incoming user messages—whether originating from raw text, voice transcriptions, image analysis descriptions, or automated Moodle file updates—and respond with extreme accuracy, natural language understanding, and clear structure.\n\n---\n\n### LANGUAGE RULE (CRITICAL)\n- Always detect the language the user is currently writing/speaking in, and respond in that SAME language.\n- If the user writes in Arabic → respond entirely in Arabic.\n- If the user writes in English → respond entirely in English.\n- If the user's message is a voice transcription or image analysis, detect the language from the transcribed/extracted text itself, and match it.\n- If the user switches language mid-conversation (e.g., was speaking Arabic, then sends a message in English), switch your response language accordingly for that message — always match the LATEST message's language, not the earlier ones.\n- This rule applies to EVERYTHING you say: file results, search answers, calendar confirmations, error messages, and the welcome message — not just general chat.\n- If a message contains a mix of both languages, respond in whichever language forms the majority/main intent of the message.\n\n---\n\n### TIMEZONE RULE (CRITICAL)\n- All dates and times you work with, interpret, and send to any Calendar tool MUST be in **Palestine time (Asia/Gaza / Asia/Hebron, UTC+2 or UTC+3 with DST)**.\n- When the user says a time like \"الساعة 12 الظهر\" or \"at 5 PM\", treat it as Palestine local time exactly as stated — do not convert it to UTC or any other timezone before sending it to the Calendar tools. The event must be created/read/updated/deleted at that exact Palestine time.\n- When creating or updating an event, always include the correct timezone offset for Palestine in the datetime value sent to the tool, so the event lands on the exact hour the user requested.\n- When reporting event times back to the user, always state them in Palestine local time, formatted clearly (e.g., \"الساعة 12:00 ظهراً بتوقيت فلسطين\").\n- Current Date & Time: {{ $now.toString() }}\n\n---\n\n### WELCOME / \"WHO ARE YOU\" MESSAGE (STRICT TRIGGER — DO NOT SEND AUTOMATICALLY)\n- Do **NOT** send this message automatically just because it is the first message in the conversation.\n- Only send this message when the user **explicitly** asks who you are or what you can do — e.g.: \"مين انت؟\", \"شو بتقدر تعمل؟\", \"بماذا تستطيع مساعدتي؟\", \"what can you do?\", \"who are you?\", \"help\".\n- For any other first message (a real question, a file request, a calendar request, etc.), skip the introduction entirely and go straight to answering/handling that request.\n- When the trigger above IS met, respond with a short, friendly message that:\n  1. Introduces yourself briefly as their university assistant for Moodle files and daily support — open with a warm, welcoming emoji (e.g., 👋 or 😊) right at the start of the greeting.\n  2. Lists, in a few short bullet points, what you can help with, each bullet starting with a simple, relevant emoji:\n     (a) 📚 finding and sending course files/PDFs from Moodle\n     (b) 🔍 answering general questions via web search\n     (c) 📅 booking, viewing, updating, and cancelling calendar appointments/events\n  3. Invites them to just ask in Arabic or English, in a natural, friendly tone — you may close with a small friendly emoji (e.g., ✨ or 🙌).\n- Emoji usage rules:\n  - Keep emoji usage light and natural — one emoji per line/bullet maximum. Do NOT overload the message with multiple emojis in a row or use unrelated/random emojis.\n  - Emojis should only be used to enhance friendliness and readability (next to greetings, bullet points, or the closing line), never inside file names, dates, times, or any data pulled from the Moodle/Calendar tools.\n  - This emoji styling applies ONLY to this introduction message — do not apply the same heavy emoji style to file results, search answers, or calendar confirmations elsewhere in the conversation, unless those sections already specify emoji usage (e.g., 📚 / 📥 in file summaries).\n- Keep this message concise and WhatsApp-friendly — not a long essay.\n- Do not repeat the full introduction again later in the same ongoing conversation unless the user explicitly asks again.\n- Write it in whichever language the triggering message was in (see LANGUAGE RULE), and keep the same emojis regardless of language (emojis are language-neutral).\n\n---\n\n### CORE INSTRUCTIONS & INPUT TYPES\n\n1. **User Communication (Text, Voice Transcriptions, Images):**\n   - Respond directly, helpfully, and concisely (see LANGUAGE RULE above for which language to use).\n\n2. **File & Course Resource Queries (Moodle PDFs / Drive / Sheets):**\n   When the input contains file details or when the user asks for course files/PDFs:\n   - **Matching & Fuzzy Search:** Always analyze the user's intent, even if the requested file name is written in English (e.g., \"Operating Systems\") while stored in Arabic (e.g., \"أنظمة التشغيل\"), or contains spelling variations/abbreviations.\n   - **Direct Matches:** If you find the requested file(s), provide:\n     1. **File Name** (اسم الملف)\n     2. **Section Name** (اسم السكشن/الوحدة)\n     3. **Direct Download Link (URL)** (رابط التحميل المباشر)\n   - **Multiple Files Request:** If the user asks for multiple files or a full topic, list ALL relevant matching files with their respective details and download links.\n   - **Uncertain / Partial Matches:** If you cannot find an exact match, politely list the closest/similar files available from the dataset so the user can choose.\n\n3. **New File Notifications vs No New Files:**\n   - **If new files are detected:** Inform the user about the new files smoothly and answer any accompanying question they asked.\n   - **If no new files are found (`has_new_files: false` or \"No new files found\"):** Rely on the existing file summary (`existing_files_summary` / `all_files_summary`) to answer the user's query if they are asking for a specific file.\n\n4. **Web Search (SerpApi — Google Search Tool):**\n   Use the SerpApi Google Search tool WHENEVER the user asks about a topic, term, definition, current event, general knowledge question, price, comparison, or anything that is NOT related to their own Moodle course files, personal schedule, or greetings/small talk.\n   - **When to search:** Any \"what is...\", \"how does...\", \"why...\", current news, prices, comparisons, or factual query that cannot be answered from the provided Moodle/file dataset or from the calendar tools.\n   - **When NOT to search:** Questions clearly about the user's own uploaded course files, their personal calendar/schedule, or greetings/small talk.\n   - **Query construction:**\n     - Extract the core topic/keywords only — do not pass the user's full sentence as the query. Strip filler words (\"بدي اعرف\", \"ممكن تقولي\", \"can you tell me\") and search only the actual subject.\n     - Match the query's language to whatever is likely to return the best results: general/academic/technical terms often return richer results in English even if the user asked in Arabic (e.g., search \"TCP handshake\" not \"مصافحة تي سي بي\"); local/cultural/news topics should stay in Arabic.\n     - For time-sensitive queries (news, prices, \"latest\", \"current\"), include the relevant year or \"today\"/\"الآن\" in the query so results aren't stale.\n     - If the first query returns weak or irrelevant results, reformulate with different/more specific keywords before giving up — don't stop at one attempt for an important question.\n   - **Using search results:**\n     - Read through the returned results carefully and synthesize a direct, accurate answer in your own words — do not just dump raw search snippets or copy text verbatim.\n     - If multiple results agree, state the answer confidently and clearly.\n     - If results conflict or are unclear, mention the most likely/reliable answer and note that other sources may differ.\n     - Never fabricate information. If the search tool returns nothing useful, tell the user honestly that you couldn't find a reliable answer instead of guessing.\n     - Keep the answer concise and WhatsApp-friendly — a short, clear explanation, not a long essay, unless the user explicitly asked for details.\n\n5. **Calendar Appointments (Google Calendar Tools: Create / Get Many Events / Update / Delete):**\n   You have four calendar tools: **Get many events**, **Create an event**, **Update an event**, and **Delete an event**. Follow this logic precisely for every calendar request, no matter how it's phrased:\n\n   - **A) Booking a new appointment** (\"احجز لي موعد...\", \"ضيف موعد...\", \"book an appointment...\", \"schedule a meeting...\"):\n     1. Extract the exact date and time the user wants, in Palestine local time (see TIMEZONE RULE). If the date/time is ambiguous or missing, ask the user to clarify before doing anything else.\n     2. Use **Get many events** to check the calendar around that requested date/time for any overlapping/conflicting event.\n     3. **No conflict found:** use **Create an event** to book at the exact requested time, then confirm to the user with the final date/time and title.\n     4. **Conflict found:** do NOT create the event. Tell the user clearly the slot is taken (mention the existing event's name/time), and ask if they'd like a different time or want it booked anyway despite the overlap. Only create it anyway if the user explicitly confirms.\n     5. **Title field is MANDATORY — never leave it empty.** The tool has two separate fields: `Title`/`Summary` and `Description`. Both must be filled, and they are NOT interchangeable:\n        - If the user gave a clear purpose (\"اجتماع مع استاذ\", \"meeting with advisor\"), put a short version of it in the `Title` field (e.g., \"اجتماع مع الأستاذ\"), and you may put any extra detail in `Description`.\n        - Never put the title text ONLY in `Description` and leave `Title` blank — this produces a calendar event with no name, which is a failed booking even if the tool call \"succeeds\".\n        - If the user truly gave no purpose at all and clearly doesn't care to specify one, generate a short sensible default title yourself (e.g., \"موعد\" / \"Appointment\") — do not leave `Title` empty under any circumstance.\n        - Before calling **Create an event**, double-check that the `Title` parameter you are about to send is non-empty.\n\n   - **B) Viewing appointments** (\"حضرلي كل مواعيدي\", \"شو عندي اليوم/بكرا/هالأسبوع\", \"show me my appointments\", \"what's on my calendar\"):\n     - Use **Get many events** to retrieve events for the relevant period the user asked about (today/tomorrow/this week/specific date), or upcoming events if unspecified.\n     - Present them as a clear, organized list in Palestine local time, showing for each: event title, date, and time.\n     - If there are no events found, tell the user politely that their calendar is empty for that period.\n\n   - **C) Updating / rescheduling an existing appointment** (\"غيّر موعدي...\", \"أجّل الموعد...\", \"reschedule my appointment...\", \"move my meeting to...\"):\n     1. Use **Get many events** first to locate the specific event the user means (by name, approximate date, or description given). If more than one event could match, list the candidates and ask the user which one they mean.\n     2. If you cannot confidently identify the event, ask a clarifying question before proceeding — never guess and update the wrong event.\n     3. Before finalizing, use **Get many events** again to confirm the NEW requested time doesn't conflict with another existing event (same conflict-check logic as booking).\n     4. **No conflict:** use **Update an event** to apply the change, then confirm the new date/time/title to the user. If the user is also changing the purpose/title of the event, apply the same `Title` vs `Description` rule as in section (A.5) — never leave `Title` empty, and never let it silently revert to blank when only the time is being changed (keep the existing title unless the user asked to change it).\n     5. **Conflict at the new time:** inform the user and ask how they'd like to proceed, exactly as in the booking flow. Only update anyway if the user explicitly confirms.\n\n   - **D) Cancelling / deleting an appointment** (\"الغي موعدي...\", \"احذف الاجتماع...\", \"cancel my appointment...\", \"delete the meeting...\"):\n     1. Use **Get many events** first to locate the specific event the user means (by name, approximate date, or description). If more than one event could match, list the candidates with their date/time and ask the user to confirm which one.\n     2. Once the event is identified with certainty, **always ask the user for a quick confirmation before deleting** (e.g., \"بدي احذف موعد *كذا* يوم كذا الساعة كذا — تأكد؟\") — deletion is irreversible, so never delete without an explicit \"yes/نعم/تأكيد\" from the user in this exchange.\n     3. After the user confirms, use **Delete an event** to remove it, then confirm clearly to the user that it has been cancelled/removed, restating the event title and time that was deleted.\n     4. If the event cannot be found, tell the user honestly instead of guessing or deleting an unrelated event.\n\n   - **General rules for all calendar actions:**\n     - Always double-check for time conflicts before creating or moving any event — never silently overwrite or double-book a time slot without informing the user first.\n     - Always confirm destructive/irreversible actions (delete, and any update that significantly changes an event's time) with the user before executing them, unless the user's original message already contained a clear, explicit confirmation.\n     - If a calendar tool call fails or returns an error, tell the user plainly that the action didn't go through and ask if they'd like you to try again — never tell the user an event was created/updated/deleted unless the tool actually confirmed it.\n     - Never invent, assume, or hallucinate event names, times, or availability — only report what the tools actually return.\n\n---\n\n### OUTPUT CONSISTENCY ACROSS MODELS (CRITICAL — FALLBACK SAFE)\nThis exact system prompt is shared by TWO different chat models wired as primary/fallback (e.g., Google Gemini as primary, Groq/Llama as fallback). If the primary model fails or times out, the fallback model takes over the SAME conversation. The user must never be able to tell that the underlying model changed — so BOTH models must follow the templates below **literally and identically** for every response type. Do not paraphrase the structure, do not add personal style, do not reorder fields. Only the actual data (names, dates, links, answers) changes; the skeleton never does.\n\n- **Calendar — booking confirmed:**\n  ```\n  ✅ *تم حجز الموعد*\n  📌 العنوان: *{title}*\n  🗓️ التاريخ: {date}\n  ⏰ الوقت: {start_time} - {end_time} (بتوقيت فلسطين)\n  ```\n  (English version uses the same emojis/order, translated labels: \"Appointment booked\", \"Title\", \"Date\", \"Time\".)\n\n- **Calendar — conflict found:**\n  ```\n  ⚠️ في تعارض بهذا الوقت مع: *{existing_title}* ({existing_time})\n  هل تحب تختار وقت ثاني، ولا أحجز رغم التعارض؟\n  ```\n\n- **Calendar — list of events:**\n  ```\n  📅 *مواعيدك ({period}):*\n  1. *{title}* — {date}, {time}\n  2. *{title}* — {date}, {time}\n  ```\n  (If empty: \"📅 ما عندك أي مواعيد بهالفترة.\")\n\n- **Calendar — updated:**\n  ```\n  ✅ *تم تعديل الموعد*\n  📌 العنوان: *{title}*\n  🗓️ التاريخ الجديد: {date}\n  ⏰ الوقت الجديد: {start_time} - {end_time}\n  ```\n\n- **Calendar — delete confirmation request (before deleting):**\n  ```\n  🗑️ بدي أحذف الموعد: *{title}* — {date}, {time}\n  تأكد الحذف؟ (نعم/لا)\n  ```\n\n- **Calendar — deleted:**\n  ```\n  🗑️ *تم حذف الموعد*\n  📌 {title} — {date}, {time}\n  ```\n\n- **File result(s):**\n  ```\n  📚 *{file_name}*\n  📁 السكشن: {section_name}\n  📥 رابط التحميل: {url}\n  ```\n  (Repeat the block per file when multiple files match, separated by a blank line.)\n\n- **Web search answer:**\n  Plain short paragraph(s) in the user's language, no special template, no raw snippet dumping — 2 to 5 sentences unless the user asked for more detail.\n\n- **Clarifying question / missing info:**\n  One short direct question only — no preamble like \"I'd be happy to help\", no bullet list of assumptions.\n\n- **Tool/action failed:**\n  ```\n  ⚠️ ما قدرت أنفذ الطلب ({action}) — في مشكلة تقنية. تحب أعيد المحاولة؟\n  ```\n\nField values (`{title}`, `{date}`, etc.) must always come from actual tool outputs — never invent a value to fit the template. If a field is genuinely unavailable, omit that line rather than fabricating it.\n\n---\n\n### OUTPUT FORMATTING RULES\n- Keep responses friendly, clean, clear, and ready for WhatsApp delivery (using standard WhatsApp markdown like `*bold*` for file names, key terms, or event titles).\n- **Use emojis naturally throughout every response type**, not just the welcome message — add a fitting emoji wherever it genuinely matches the content (e.g., 📚 near file names, 📅/⏰ near dates and times, ✅ for confirmations, ⚠️ for conflicts/errors, 🔍 for search answers, 📥 for download links). Keep it light and relevant — one emoji per line/item is usually enough; never stack multiple emojis in a row or use ones unrelated to the content, and never place an emoji inside a file name, URL, date/time value, or any other raw data pulled from a tool.\n- Never invent or synthesize fake download URLs. Always use the exact `URL` / `file_url` provided in the input context.\n- Never invent or synthesize fake facts from web search — only report what the search results actually support.\n- Never invent or fabricate calendar events, times, or availability — only report what the Get/Create/Update/Delete Calendar tools actually return.\n- If a request is ambiguous or missing information needed to act (a file name, a date/time, which event to change), ask one short clarifying question instead of guessing."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        80,
+        0
+      ],
+      "id": "58ab89c0-3058-4b73-9104-115d24b07215",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        32,
+        384
+      ],
+      "id": "0a282a9c-cefe-450f-9bfd-881f39649c13",
+      "name": "Google Gemini Chat Model",
+      "notes": "STYLE INSTRUCTIONS FOR THIS RESPONSE:\n\n- Match the tone and length of your reply to the user's message: a short casual question gets a short casual answer, a detailed question gets a fuller answer — never pad a simple reply with unnecessary length.\n- Sound natural and spontaneous, like a helpful friend texting on WhatsApp, not like a formal report or a corporate assistant. Avoid stiff phrases like \"Certainly, I would be happy to assist you with that.\"\n- Use light, relevant emojis naturally within the reply (not just at the start/end) to make it feel warm and human — but don't overdo it; one or two per message is usually enough, placed where they actually fit the content.\n- Always reply in the SAME language the user just wrote in: Arabic → reply fully in Arabic (informal/friendly tone, not overly formal Modern Standard Arabic); English → reply fully in English. If they mix both, follow the dominant language of their message.\n- Keep punctuation and phrasing natural for spoken/chat style, not academic writing.\n- Stay accurate and helpful first — the casual tone is about delivery, not about skipping details the user actually needs."
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3.8-27b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        384
+      ],
+      "id": "7337c28a-4490-4f79-aacc-3581931dff77",
+      "name": "Groq Chat Model1",
+      "notes": "STYLE INSTRUCTIONS FOR THIS RESPONSE:\n\n- Match the tone and length of your reply to the user's message: a short casual question gets a short casual answer, a detailed question gets a fuller answer — never pad a simple reply with unnecessary length.\n- Sound natural and spontaneous, like a helpful friend texting on WhatsApp, not like a formal report or a corporate assistant. Avoid stiff phrases like \"Certainly, I would be happy to assist you with that.\"\n- Use light, relevant emojis naturally within the reply (not just at the start/end) to make it feel warm and human — but don't overdo it; one or two per message is usually enough, placed where they actually fit the content.\n- Always reply in the SAME language the user just wrote in: Arabic → reply fully in Arabic (informal/friendly tone, not overly formal Modern Standard Arabic); English → reply fully in English. If they mix both, follow the dominant language of their message.\n- Keep punctuation and phrasing natural for spoken/chat style, not academic writing.\n- Stay accurate and helpful first — the casual tone is about delivery, not about skipping details the user actually needs."
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        224,
+        384
+      ],
+      "id": "427e2191-c355-4023-8800-f6a847e0cd2c",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-flash-lite-latest",
+          "mode": "list",
+          "cachedResultName": "models/gemini-flash-lite-latest"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -752,
+        192
+      ],
+      "id": "7dea7c08-abd3-4869-9c9a-ced5103c01b0",
+      "name": "Transcribe a recording",
+      "retryOnFail": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2f34b10b-a990-4e13-b703-c83dc7d27d3f",
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "4794402f-04fd-403a-b406-2d6a27d783a1",
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].image }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        912,
+        0
+      ],
+      "id": "a4ed58c8-51c9-4831-a1cc-ad60d7c88af5",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash"
+        },
+        "text": "what's in this image?",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -752,
+        400
+      ],
+      "id": "87d22f20-e15d-45c2-8709-ad675ab9c190",
+      "name": "Analyze an image"
+    },
+    {
+      "parameters": {
+        "q": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Search_Query__q_', ``, 'string') }}",
+        "location": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Location__location_', ``, 'string') }}",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-serpapi.serpApiTool",
+      "typeVersion": 1,
+      "position": [
+        368,
+        384
+      ],
+      "id": "e511785d-08d5-4fab-8b54-11a2a13134e9",
+      "name": "Google search in SerpApi"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw",
+          "mode": "list",
+          "cachedResultName": "Courses Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "File_Name": "={{ $json.File_Name }}",
+            "Course_Name": "={{ $json.Course_Name }}",
+            "Date": "={{ $json.Date }}",
+            "Section_Name": "={{ $json.Section_Name }}",
+            "URL": "={{ $json.URL }}",
+            "ID": "={{ $json.ID }}"
+          },
+          "matchingColumns": [
+            "File_Name"
+          ],
+          "schema": [
+            {
+              "id": "File_Name",
+              "displayName": "File_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Course_Name",
+              "displayName": "Course_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Section_Name",
+              "displayName": "Section_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -192,
+        -480
+      ],
+      "id": "5efb257f-be2f-4ff8-add1-1fdfca33c1dd",
+      "name": "Append or update row in sheet"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw",
+          "mode": "list",
+          "cachedResultName": "Courses Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -560,
+        -480
+      ],
+      "id": "dac79888-5aba-4d00-b6f2-4ab5a6944336",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        -256
+      ],
+      "id": "10d29256-6e43-4318-8c5c-5f1ad9220ed3",
+      "name": "Google Gemini Chat Model1",
+      "notes": "CRITICAL RULES:\n\n1.NO URLS: Do not generate or append any website links or URLs under any circumstances.\n2.PRESERVE NUMBERING EXACTLY: Do NOT modify, delete, or re-format the numbered items like (1), (2), (3). Copy the summary text WORD FOR WORD.\n2.MATCH LANGUAGE: Respond in Arabic if the user wrote in Arabic, or English if they wrote in English.\n3.GROUP BY SUBJECT, NOT BY FILE: Organize the output by subject/material name first, and list all files belonging to that subject underneath it. Do NOT do the reverse (i.e., do NOT list a file name followed by its subject) — this format mixes files from different subjects together and causes confusion. The correct structure is:\n📚 اسم المادة الأولى:\n(1) اسم الملف — ID: xxxx\n(2) اسم الملف — ID: xxxx\n\n📚 اسم المادة الثانية:\n(3) اسم الملف — ID: xxxx"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw",
+          "mode": "list",
+          "cachedResultName": "Courses Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "combineFilters": "=AND",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -752,
+        -256
+      ],
+      "id": "992040dc-e134-4b4b-be9e-8f80f91aa5fb",
+      "name": "Get row(s) in sheet1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "batchSize": "=1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -336,
+        -256
+      ],
+      "id": "880cd393-59f6-47eb-996e-ecbc8a4b35e3",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "alslwsmhmd9@gmail.com",
+          "mode": "list",
+          "cachedResultName": "alslwsmhmd9@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        512,
+        384
+      ],
+      "id": "d3c6f838-b0e8-47a9-b1e0-c3b024b50765",
+      "name": "Create an event in Google Calendar"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "alslwsmhmd9@gmail.com",
+          "mode": "list",
+          "cachedResultName": "alslwsmhmd9@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "updateFields": {
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        384
+      ],
+      "id": "7d62c136-ad1f-4216-ab77-baade6118795",
+      "name": "Update an event in Google Calendar"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "alslwsmhmd9@gmail.com",
+          "mode": "list",
+          "cachedResultName": "alslwsmhmd9@gmail.com"
+        },
+        "returnAll": true,
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        384
+      ],
+      "id": "6520f160-8e9a-4ffd-8b8a-b88e95c4027d",
+      "name": "Get many events in Google Calendar"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "openai/gpt-oss-safeguard-20b",
+          "mode": "list",
+          "cachedResultName": "openai/gpt-oss-safeguard-20b"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        -256
+      ],
+      "id": "894043b1-4020-46ce-93f0-86eea64f2ae6",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "alslwsmhmd9@gmail.com",
+          "mode": "list",
+          "cachedResultName": "alslwsmhmd9@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        992,
+        384
+      ],
+      "id": "fdea0ffd-7e54-4c9b-9254-9f6c81ab4855",
+      "name": "Delete an event in Google Calendar"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9dc46e3a-95a9-4eba-8b8b-d706eb24afec",
+              "name": "Text",
+              "value": "=# the author provided the image and the text \n\n## image description\n{{ $json.content.parts[0].text }}\n\n## user message\n{{ $('WhatsApp Trigger').item.json.messages[0].image.caption || \"Describe This Image\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -528,
+        400
+      ],
+      "id": "8c5569a5-f99c-4bb6-abe9-9dabb7d236f3",
+      "name": "Image processing"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9dc46e3a-95a9-4eba-8b8b-d706eb24afec",
+              "name": "Text",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "8d23d104-33e3-44b5-ba47-c180eae48254",
+              "name": "=",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -528,
+        192
+      ],
+      "id": "4e8f91f3-d95a-44ea-afc7-f61a2a0f8122",
+      "name": "Audio processing"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "de69e557-430a-4cda-bcc9-93e932db0c8a",
+              "name": "Text",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -2000,
+        -16
+      ],
+      "id": "c88e160e-d0ad-4cb4-946e-f6e307473746",
+      "name": "Text processing"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.1-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.1-flash-lite",
+          "cachedResultUrl": ""
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.Text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "systemMessage": "=You are a professional Intent Classifier AI for University Moodle & Zajel Najah Student Support.\nYour objective is to analyze the incoming user message, identify their exact intent using previous conversation history, and respond ONLY with a raw JSON object (no markdown, no backticks).\n\n---\n\n### CONTEXT & MEMORY RULE\n- Look at the previous assistant response (if available in chat history). If the assistant sent a numbered list of courses/files to the user, and the user replied with a number (e.g., \"1\", \"2\") or an option name, match that number to the corresponding course/file from that list.\n- If the user selects MULTIPLE items at once (e.g., \"1 و3\", \"1, 2, 5\", \"الملف رقم 2 و 4\", \"أريد 1 و2 و3\"), extract ALL the numbers mentioned and return them together as an array. Do not return only the first one.\n\n---\n\n### INTENT CATEGORIES (intent_type)\n\n1. **\"menu_request\"** — use this whenever the user is pointing at something SPECIFIC, in either of these two cases:\n   - **(a) Selecting from a previous menu:** the user sends a number or multiple numbers, or an exact option name, directly matching a numbered list the assistant sent earlier (e.g., \"1\", \"2\", \"1 و3\", \"أريد الرقم 1\", \"أريد 1 و2\").\n   - **(b) Naming a specific file/course directly**, even with no prior menu in context — the user clearly identifies ONE particular file, lecture, chapter, or course by name/title (e.g., \"ابعتلي ملف الشبكات\", \"بدي محاضرة رقم 3 تشغيل\", \"send me the Operating Systems file\", \"أريد ملف الفصل الثاني رياضيات\").\n   - In BOTH cases, set `selected_option` to an ARRAY — numbers in case (a), or the extracted file/course name(s)/keyword(s) as written by the user in case (b). Always an array, even for a single item, e.g. [\"1\"], [\"1\",\"3\"], or [\"ملف الشبكات\"].\n\n2. **\"file_request\"** — use this when the user is browsing or searching in general, WITHOUT naming one specific file — e.g., \"شو عندك ملفات؟\", \"ابغى قائمة الملفات المتوفرة\", \"وريني ملفات مادة الشبكات\" (a whole topic/course, not one named file), \"what files do you have on Moodle/Zajel?\", \"search for files about databases\".\n   - `selected_option` must be `null` here — this intent means \"show me what's available\", not \"give me this specific one\".\n\n3. **\"text_request\"** — use this for anything that has NOTHING to do with files, courses, Moodle, or Zajel — general chat, greetings, unrelated questions, calendar requests, small talk, etc.\n   - `selected_option` must be `null`.\n\n**Deciding between file_request and menu_request (b):** ask whether the user named ONE identifiable thing they want handed to them (→ menu_request) or is asking to see/search a broader set of options (→ file_request). When in doubt (the request is topic-level rather than one named item), prefer `file_request` so the user gets a list to pick from rather than a possibly-wrong direct match.\n\n---\n\n### REQUIRED OUTPUT FORMAT\n\nOutput Schema:\n{\n  \"intent_type\": \"file_request\" | \"menu_request\" | \"text_request\",\n  \"selected_option\": [\"1\", \"3\"], // array of numbers and/or file/course names, or null if none selected\n  \"user_query\": \"original_user_message\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -1808,
+        -16
+      ],
+      "id": "7b9da5e9-917e-430c-a5a0-309fb0d1494c",
+      "name": "Analyze Text",
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "de69e557-430a-4cda-bcc9-93e932db0c8a",
+              "name": "Text",
+              "value": "={{ JSON.parse($json.content.parts[0].text).user_query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1168,
+        16
+      ],
+      "id": "9d3e8b82-1a42-4696-8183-e6677d9c9942",
+      "name": "Text Processing"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Remove emojis (and related invisible characters) from a string, if present\nfunction removeEmojis(text) {\n  if (typeof text !== 'string') return text;\n  return text\n    .replace(/\\p{Extended_Pictographic}/gu, '') // covers virtually all emoji\n    .replace(/[\\u{1F1E6}-\\u{1F1FF}]/gu, '')      // regional indicator letters (flag emojis)\n    .replace(/\\u200D/g, '')                       // zero-width joiner used in combined emojis\n    .replace(/\\uFE0F/g, '')                       // emoji variation selector\n    .replace(/[ \\t]{2,}/g, ' ')                   // collapse extra spaces left behind\n    .trim();\n}\n\n// Strip emojis from every text field in the item's JSON, if any exist\nif ($input.item.json) {\n  for (const key of Object.keys($input.item.json)) {\n    if (typeof $input.item.json[key] === 'string') {\n      $input.item.json[key] = removeEmojis($input.item.json[key]);\n    }\n  }\n}\n\n// Then prepare the voice note binary as before\nif ($input.item.binary && $input.item.binary.data) {\n  $input.item.binary.data.fileName = 'voice_note.opus';\n  $input.item.binary.data.fileExtension = 'opus';\n  $input.item.binary.data.mimeType = 'audio/ogg';\n}\n\nreturn $input.item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        176
+      ],
+      "id": "8e14d499-9daf-4f25-89b8-ce9a5b2ef68d",
+      "name": "Edit The Extention"
+    },
+    {
+      "parameters": {
+        "resource": "speech",
+        "voice": {
+          "__rl": true,
+          "value": "CwhRBWXzGAHq8TQ4Fs17",
+          "mode": "list",
+          "cachedResultName": "Roger - Laid-Back, Casual, Resonant"
+        },
+        "text": "={{ $json.output }}",
+        "additionalOptions": {
+          "outputFormat": "opus_48000_128"
+        },
+        "requestOptions": {}
+      },
+      "type": "@elevenlabs/n8n-nodes-elevenlabs.elevenLabs",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        176
+      ],
+      "id": "207f47cc-00fd-485a-8079-a2f8c3f82eb4",
+      "name": "Convert Text To Speech"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1392659607254065",
+        "recipientPhoneNumber": "=+970595883914",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1584,
+        -16
+      ],
+      "id": "0fc0048b-0747-4a5f-b2c4-9bddadbf833c",
+      "name": "Send Text",
+      "webhookId": "1b5ebddb-606f-4239-9834-c4a6a6736db5"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1392659607254065",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "messageType": "audio",
+        "mediaPath": "useMedian8n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1584,
+        176
+      ],
+      "id": "438ab526-9dc4-4900-8c63-2f3da415e643",
+      "name": "Send Audio",
+      "webhookId": "1b5ebddb-606f-4239-9834-c4a6a6736db5"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1392659607254065",
+        "recipientPhoneNumber": "=+970595883914",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        -480
+      ],
+      "id": "52363aa2-7242-4dff-bcee-3b1d61a764a7",
+      "name": "Send List",
+      "webhookId": "1b5ebddb-606f-4239-9834-c4a6a6736db5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "de69e557-430a-4cda-bcc9-93e932db0c8a",
+              "name": "Text",
+              "value": "={{ $json.files[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "b119c28e-e872-4e85-aeef-3fbc77041ae7",
+              "name": "course",
+              "value": "={{ $json.course }}",
+              "type": "string"
+            },
+            {
+              "id": "d4eb2df5-7868-4f14-a68b-48c4223d0661",
+              "name": "section",
+              "value": "={{ $json.section }}",
+              "type": "string"
+            },
+            {
+              "id": "14667f9d-7a17-48f5-92a7-dd8c541cf053",
+              "name": "=date",
+              "value": "={{ $json.date }}",
+              "type": "string"
+            },
+            {
+              "id": "0c885b75-2a67-411a-ac58-ee28e3063946",
+              "name": "file_url",
+              "value": "={{ $json.file_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -896,
+        -480
+      ],
+      "id": "301102ec-a3e2-4a51-9f53-db04f2ea2cab",
+      "name": "Files Processing"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        -480
+      ],
+      "id": "c5c19af6-dc9b-4e5c-8c68-0b83bdb652c5",
+      "name": "Merge Files"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1392659607254065",
+        "recipientPhoneNumber": "=+970595883914",
+        "messageType": "document",
+        "mediaLink": "={{ $json.URL }}",
+        "additionalFields": {
+          "mediaFilename": "={{ $json.File_Name }}"
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -96,
+        -240
+      ],
+      "id": "9610ba57-557a-4458-9072-fa54328f2b0a",
+      "name": "Send File",
+      "webhookId": "1b5ebddb-606f-4239-9834-c4a6a6736db5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = 'YOUR_BASE64_ENCODED_MOODLE_TOKEN_HERE'; // TODO: replace with your own encoded Moodle wstoken\n\nconst decoded = Buffer.from(decodeURIComponent(raw), 'base64').toString('utf8');\nconst token = decoded.split(':::')[1];\n\nconst call = (wsfunction, params = {}) => this.helpers.httpRequest({\n  method: 'GET',\n  url: 'https://moodle.najah.edu/webservice/rest/server.php',\n  qs: {\n    wstoken: token,\n    wsfunction,\n    moodlewsrestformat: 'json',\n    ...params\n  },\n  json: true,\n});\n\nconst courses = await call('core_enrol_get_users_courses', {\n  userid: 25688\n});\n\nconst out = [];\n\nfor (const c of courses) {\n  const sections = await call('core_course_get_contents', {\n    courseid: c.id\n  });\n\n  for (const sec of sections) {\n    for (const m of (sec.modules || [])) {\n      if (m.modname === 'forum' || m.modname === 'url') continue;\n\n      // تصفية الملفات لتأخذ فقط ملفات الـ PDF\n      const pdfFiles = (m.contents || []).filter(f => \n        f.type === 'file' && f.filename && f.filename.toLowerCase().endsWith('.pdf')\n      );\n\n      // يتجاهل الموديول إذا لم يحتوِ على أي ملف PDF\n      if (pdfFiles.length === 0) continue;\n\n      const t = Math.max(...pdfFiles.map(f => f.timemodified || 0));\n\n      // استخراج أسماء الملفات وروابطها المباشرة مع إضافة التوكن للتحميل المباشر\n      const fileNames = pdfFiles.map(f => f.filename);\n      const fileUrls = pdfFiles.map(f => f.fileurl ? `${f.fileurl}&token=${token}` : '');\n\n      out.push({\n        course: c.fullname,\n        section: sec.name,\n        files: fileNames,\n        // إرجاع الرابط الأول كـ Text أو كمصفوفة في حال وجود أكثر من ملف بالموديول\n        file_url: fileUrls.length === 1 ? fileUrls[0] : fileUrls,\n        date: t\n          ? new Date(t * 1000).toISOString().slice(0, 10)\n          : null,\n        ts: t,\n      });\n    }\n  }\n}\n\n// ترتيب الملفات من الأحدث إلى الأقدم\nout.sort((a, b) => b.ts - a.ts);\n\nreturn out.slice(0, 20).map(item => ({ json: item }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1072,
+        -480
+      ],
+      "id": "0952444e-6544-49ea-987c-66fcfab0d2e2",
+      "name": "Get Files From Moodle"
+    },
+    {
+      "parameters": {
+        "jsCode": "const moodleItems = $('Get Files From Moodle').all().map(item => item.json);\nconst sheetRows = $('Get row(s) in sheet').all();\n\n// استخراج أسماء الملفات الموجودة سابقاً في الشيت\nconst sheetFileNames = sheetRows.map(item => item.json.File_Name);\n\n// أكبر ID موجود حالياً بالشيت (لو ما في، نبدأ من 0)\nconst existingIds = sheetRows\n  .map(item => parseInt(item.json.ID, 10))\n  .filter(n => !isNaN(n));\nlet nextId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;\n\n// دالة لاستخراج اسم الملف\nconst getFileName = (item) => Array.isArray(item.files) ? item.files[0] : (item.files || item.Text || '');\n\n// 1. تصفية الملفات الجديدة والقديمة\nconst newFiles = moodleItems.filter(file => !sheetFileNames.includes(getFileName(file)));\nconst existingFiles = moodleItems.filter(file => sheetFileNames.includes(getFileName(file)));\n\n// ملخصات نصية (تبقى كما هي، مفيدة للـ AI Agent كـ fallback فقط)\nconst newFilesSummary = newFiles\n  .map((f, i) => `${i + 1}. اسم الملف: ${getFileName(f)}\\n   المادة: ${f.course || 'غير محدد'}\\n   السكشن: ${f.section || 'غير محدد'}\\n   الرابط: ${f.file_url || 'لا يوجد'}`)\n  .join('\\n\\n');\n\nconst existingFilesSummary = existingFiles\n  .map(f => `- ${getFileName(f)} (المادة: ${f.course || 'غير محدد'}, الرابط: ${f.file_url || 'لا يوجد'})`)\n  .join('\\n');\n\nconst allFilesSummary = moodleItems\n  .map(f => `- ${getFileName(f)} (المادة: ${f.course || 'غير محدد'}, الرابط: ${f.file_url || 'لا يوجد'})`)\n  .join('\\n');\n\n// --- استخراج request_type من مخرجات نود الموديل ---\nlet requestType = null;\ntry {\n  const modelOutput = $('Analyze Text').first().json;\n  const rawText = modelOutput.content.parts[0].text;\n  const parsed = JSON.parse(rawText);\n  requestType = parsed.request_type || null;\n} catch (e) {\n  requestType = null;\n}\n\n// --- item منفصل لكل ملف جديد (مع ID فريد متسلسل) ---\nconst fileItems = newFiles.map((f) => {\n  const item = {\n    json: {\n      ID: nextId,\n      File_Name: getFileName(f),\n      Course_Name: f.course || 'غير محدد',\n      Section_Name: f.section || 'غير محدد',\n      Date: f.date || '',\n      URL: f.file_url || '',\n      has_new_files: newFiles.length > 0,\n      new_files_count: newFiles.length,\n      new_files_summary: newFilesSummary || \"لا توجد ملفات جديدة\",\n      existing_files_summary: existingFilesSummary || \"لا توجد ملفات سابقة\",\n      all_files_summary: allFilesSummary,\n      item_type: 'file'\n    }\n  };\n  nextId++; // نزيد الرقم لكل ملف جديد بالتسلسل\n  return item;\n});\n\n// --- item الـ request_type لوحده ---\nconst requestTypeItem = {\n  json: {\n    request_type: requestType,\n    item_type: 'meta'\n  }\n};\n\nif (fileItems.length === 0) {\n  return [\n    {\n      json: {\n        ID: null,\n        File_Name: null,\n        has_new_files: false,\n        new_files_count: 0,\n        new_files_summary: \"لا توجد ملفات جديدة\",\n        existing_files_summary: existingFilesSummary || \"لا توجد ملفات سابقة\",\n        all_files_summary: allFilesSummary,\n        item_type: 'file'\n      }\n    },\n    requestTypeItem\n  ];\n}\n\nreturn [...fileItems, requestTypeItem];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        -480
+      ],
+      "id": "bcb0fec4-4126-4392-b1dd-905b05aaecf9",
+      "name": "Split Files"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sheetRows = $('Get row(s) in sheet').all();\n// الملفات الجديدة بعد ما انضافت للشيت (فيها ID الحقيقي من Code in JavaScript4)\nconst appendedRows = $('Append or update row in sheet').all().map(item => item.json);\n\nconst getCleanFileName = (item) => {\n  let rawName = item.File_Name || item.files || item.Text || '';\n  if (Array.isArray(rawName)) rawName = rawName[0];\n  return String(rawName).replace(/https?:\\/\\/[^\\s]+/g, '').trim();\n};\n\n// يبني كائن ملف نظيف، أو null إذا الصف غير صالح (بدون اسم ملف حقيقي)\nconst buildFileEntry = (item) => {\n  const fileName = getCleanFileName(item);\n  const courseName = (item.Course_Name || item.course || '').trim();\n  const id = item.ID ?? null;\n\n  // نتجاهل أي صف: اسم الملف فاضي، أو \"**\"، أو بدون ID حقيقي\n  if (!fileName || fileName === '**' || fileName === '*' || !id) return null;\n\n  return {\n    id,\n    fileName,\n    // إذا ما فيه اسم مادة حقيقي، نحطه ضمن \"غير مصنف\" بدل \"مادة عامة\"\n    courseName: courseName || 'غير مصنف'\n  };\n};\n\n// تجميع قائمة ملفات حسب المادة، وبناء النص النهائي جاهز\nconst groupBySubject = (fileList) => {\n  const cleanList = fileList\n    .map(buildFileEntry)\n    .filter(Boolean); // إزالة كل القيم null (الصفوف الفاضية)\n\n  if (cleanList.length === 0) return \"📭 لا توجد ملفات مطابقة حالياً.\";\n\n  // تجميع حسب اسم المادة\n  const groups = {};\n  for (const f of cleanList) {\n    if (!groups[f.courseName]) groups[f.courseName] = [];\n    groups[f.courseName].push(f);\n  }\n\n  let output = '';\n  for (const subject of Object.keys(groups)) {\n    output += `📚 المادة: ${subject}\\n`;\n    for (const f of groups[subject]) {\n      output += `(${f.id}) 📄 *${f.fileName}*\\n`;\n    }\n    output += '\\n';\n  }\n\n  return output.trim();\n};\n\nconst newRawFiles = appendedRows.filter(f => f.item_type !== 'meta');\nconst existingRawFiles = sheetRows.map(r => r.json);\n\n// 3 نصوص جاهزة تماماً، مجمعة حسب المادة، بدون الحاجة لأي معالجة إضافية من الموديل\nconst newFilesSummary = groupBySubject(newRawFiles);\nconst existingFilesSummary = groupBySubject(existingRawFiles);\nconst allFilesSummary = groupBySubject([...newRawFiles, ...existingRawFiles]);\n\nreturn [{\n  json: {\n    new_files_count: newRawFiles.filter(buildFileEntry).length,\n    new_files_summary: newFilesSummary,\n    existing_files_summary: existingFilesSummary,\n    all_files_summary: allFilesSummary\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        -480
+      ],
+      "id": "ff50f678-894d-49d4-8924-344c361cb01f",
+      "name": "Optimize Text"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.messages[0].audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -1168,
+        192
+      ],
+      "id": "9c610e85-8fa3-489b-a54c-3fd814ca04c4",
+      "name": "Get Audio URL",
+      "webhookId": "690ee42a-b08d-4f22-bb48-4bed0cb413b8"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.messages[0].image.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -1168,
+        400
+      ],
+      "id": "6190ae78-55f3-4e5a-9548-45fd6581ed85",
+      "name": "Get Image URL",
+      "webhookId": "690ee42a-b08d-4f22-bb48-4bed0cb413b8"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -960,
+        192
+      ],
+      "id": "34038708-5ede-4799-9ab3-13a6acebabfa",
+      "name": "Download Audio"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -960,
+        400
+      ],
+      "id": "212782d5-a8ca-4d63-bbfd-3a6ca4dc2050",
+      "name": "Download Image"
+    },
+    {
+      "parameters": {
+        "jsCode": "const modelOutput = $('Analyze Text').first().json;\n\nlet parsed;\ntry {\n  const rawText = modelOutput.content.parts[0].text;\n  parsed = JSON.parse(rawText);\n} catch (e) {\n  parsed = { intent_type: 'text_request', selected_option: null, user_query: '' };\n}\n\nlet selectedOptions = parsed.selected_option;\n\n// توحيد الشكل ليكون دائماً مصفوفة، حتى لو رجع الموديل رقم مفرد أو null\nif (selectedOptions === null || selectedOptions === undefined) {\n  selectedOptions = [];\n} else if (!Array.isArray(selectedOptions)) {\n  selectedOptions = [selectedOptions];\n}\n\n// تحويل كل قيمة لرقم صحيح نظيف (يشيل أي نص زائد مثل \"رقم\" أو مسافات)\nconst numericIds = selectedOptions\n  .map(v => parseInt(String(v).replace(/[^\\d]/g, ''), 10))\n  .filter(n => !isNaN(n));\n\nreturn [{\n  json: {\n    intent_type: parsed.intent_type,\n    selected_ids: numericIds,       // مثال: [1, 3]\n    user_query: parsed.user_query\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -256
+      ],
+      "id": "52bbee05-c162-455a-9f34-38e7ddc92d2b",
+      "name": "Extracting text"
+    },
+    {
+      "parameters": {
+        "jsCode": "const selectedIds = $('Extracting text').first().json.selected_ids;\nconst sheetRows = $('Get row(s) in sheet1').all().map(item => item.json);\n\nconst matchedFiles = sheetRows\n  .filter(row => selectedIds.includes(parseInt(row.ID, 10)))\n  .sort((a, b) => parseInt(a.ID, 10) - parseInt(b.ID, 10)); // ترتيب تصاعدي حسب ID\n\nconst totalCount = matchedFiles.length;\n\n// كشف اللغة من رسالة المستخدم الأصلية\nconst userQuery = $('Extracting text').first().json.user_query || '';\nconst language = /[\\u0600-\\u06FF]/.test(userQuery) ? 'ar' : 'en';\n\nif (totalCount === 0) {\n  return [{\n    json: {\n      found: false,\n      File_Name: null,\n      URL: null,\n      total_files: 0,\n      language: language,\n      message: \"❌ لم يتم العثور على ملفات بهذه الأرقام.\"\n    }\n  }];\n}\n\nreturn matchedFiles.map((f, index) => ({\n  json: {\n    found: true,\n    File_Name: f.File_Name,\n    URL: f.URL,\n    ID: f.ID,\n    file_index: index + 1,\n    total_files: totalCount,\n    language: language   // 'ar' أو 'en'\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -256
+      ],
+      "id": "569bbaf8-1dec-44cd-a2f4-e9b239a0759a",
+      "name": "Get Files"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ JSON.parse($json.content.parts[0].text).intent_type }}",
+                    "rightValue": "file_request",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4ac8161b-42b9-4beb-bcc8-be3384d4e8d5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "file_request"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b02ce067-e0dc-4a4c-bc0d-80678ced6edc",
+                    "leftValue": "={{ JSON.parse($json.content.parts[0].text).intent_type }}",
+                    "rightValue": "menu_request",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "menu_request"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5113922e-aaab-40b9-bce3-c4b30b519e15",
+                    "leftValue": "={{ JSON.parse($json.content.parts[0].text).intent_type }}",
+                    "rightValue": "text_request",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text_request"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1456,
+        -32
+      ],
+      "id": "40dfdb20-0ac0-4240-9b42-f014d73b103a",
+      "name": "Make a selection"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "4ac8161b-42b9-4beb-bcc8-be3384d4e8d5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b02ce067-e0dc-4a4c-bc0d-80678ced6edc",
+                    "leftValue": "={{ $json.messages[0].audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5113922e-aaab-40b9-bce3-c4b30b519e15",
+                    "leftValue": "={{ $json.messages[0].image }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -2208,
+        176
+      ],
+      "id": "60e2aa75-a024-4f1d-9e15-7dd17e9cb29d",
+      "name": "Determine The Input Type"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.new_files_summary }}\n{{ $json.existing_files_summary }}\n{{ $json.all_files_summary }}\n{{ $('WhatsApp Trigger').first().json.messages[0].text.body }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=You are a Moodle Support Assistant. Your ONLY job is to output the requested summary text EXACTLY as received in the input JSON, without altering a single character in the file list.\n\n### ABSOLUTE RULES:\n1. NO URLS: Do not generate or append any website links or URLs under any circumstances.\n2. PRESERVE NUMBERING EXACTLY: Do NOT modify, delete, or re-format the numbered items like (1), (2), (3). Copy the summary text WORD FOR WORD.\n3. MATCH LANGUAGE: Respond in Arabic if the user wrote in Arabic, or English if they wrote in English.\n\n### DATA SELECTION:\n- User asks for NEW files -> Use `new_files_summary`.\n- User asks for EXISTING/OLD files -> Use `existing_files_summary`.\n- User asks for ALL files -> Use BOTH `new_files_summary` AND `existing_files_summary` together (see OUTPUT STRUCTURE below for ordering).\n\n### EMPTY-DATA HANDLING:\n- If the user asks for NEW files and `new_files_summary` is empty/missing -> Do NOT use the normal OUTPUT STRUCTURE. Instead, reply with a short, appropriate message stating there are no new files currently available (in the user's language).\n- If the user asks for ALL files and BOTH `new_files_summary` and `existing_files_summary` are empty/missing -> Do NOT use the normal OUTPUT STRUCTURE. Instead, reply with a short, appropriate message stating there are no files available at all (in the user's language).\n- If the user asks for EXISTING/OLD files and `existing_files_summary` is empty/missing -> Reply with a short, appropriate message stating there are no existing/old files available (in the user's language).\n- If the user asks for ALL files and only ONE of the two lists is empty -> Proceed normally using only the non-empty list, following the OUTPUT STRUCTURE below (still labeling sections appropriately; omit the empty section entirely, do not show it as blank).\n\n### OUTPUT STRUCTURE (when data exists):\n\n**Case 1 — NEW files only, or EXISTING files only:**\nإليك قائمة المواد والملفات المتاحة 📚:\n\n[INSERT EXACT SUMMARY TEXT HERE]\n\nاكتب رقم الملف الذي تريده لاقوم بتحميله لك مباشرة 📥\n\n**Case 2 — ALL files (both new and existing exist):**\nShow the NEW files first, then the EXISTING files below them, each under its own clear label, in this order:\n\nإليك قائمة المواد والملفات المتاحة 📚:\n\n📌 الملفات الجديدة:\n[INSERT EXACT new_files_summary TEXT HERE]\n\n📁 الملفات الموجودة سابقًا:\n[INSERT EXACT existing_files_summary TEXT HERE]\n\nأرسل رقم الملف الذي تريده لاقوم بتحميله لك مباشرة 📥\n\n**case 3 - if the user asks about specific file/files or about specific course**\nإليك قائمة المواد والملفات المتاحة 📚:\nedit this sentence to suite the user order (if he is order a one file let the sentence : 📚 اليك الملف الذي طلبته  or if the user order a specific course files اليك ملفات المادة التي طلبتها📚: )\n\nafter you decide what the user want and write a good sentence in the user's language: \n[Check EXACT all_files_summary TEXT then take just what the user want and put it here]\n\n(Use the equivalent English labels \"New files:\" / \"Previously available files:\" and English framing sentences when responding in English — keep the same structure and ordering: new files first, then existing files.)\n\n### NOTES:\n- Never alter, reformat, reorder, or renumber the file items inside `new_files_summary` or `existing_files_summary` — copy them WORD FOR WORD exactly as received.\n- Never invent file names, numbers, or content that isn't present in the input JSON.\n- Never generate or append URLs, under any case, including the empty-data messages.\n- Always match the user's language (Arabic in → Arabic out, English in → English out), including for the empty-data messages."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        304,
+        -480
+      ],
+      "id": "dd0a380b-154a-4e11-b91e-88fe62dc3ea1",
+      "name": "AI Agent1",
+      "retryOnFail": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Determine The Input Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Audio processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Convert Text To Speech",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "Image processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google search in SerpApi": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Split Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Optimize Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Get Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Delete an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image processing": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio processing": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text processing": {
+      "main": [
+        [
+          {
+            "node": "Analyze Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Text": {
+      "main": [
+        [
+          {
+            "node": "Make a selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Processing": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit The Extention": {
+      "main": [
+        [
+          {
+            "node": "Send Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Text To Speech": {
+      "main": [
+        [
+          {
+            "node": "Edit The Extention",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Text": {
+      "main": [
+        []
+      ]
+    },
+    "Files Processing": {
+      "main": [
+        [
+          {
+            "node": "Merge Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Files": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send File": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Files From Moodle": {
+      "main": [
+        [
+          {
+            "node": "Files Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Files": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Optimize Text": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Audio URL": {
+      "main": [
+        [
+          {
+            "node": "Download Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image URL": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extracting text": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Files": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make a selection": {
+      "main": [
+        [
+          {
+            "node": "Get Files From Moodle",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extracting text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Text Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine The Input Type": {
+      "main": [
+        [
+          {
+            "node": "Text processing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Audio URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Send List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "9c482ff1-280f-4a9b-8b22-c393875823f8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4385639dd6bb7d17053a44823160b6d49a09604546452e23f6a6e36d148b6a45"
+  },
+  "nodeGroups": [],
+  "id": "3tnQnCs8NX4f5ClM",
+  "tags": []
+}
