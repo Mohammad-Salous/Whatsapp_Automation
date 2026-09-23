@@ -192,17 +192,17 @@
         "operation": "appendOrUpdate",
         "documentId": {
           "__rl": true,
-          "value": "1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "list",
           "cachedResultName": "Courses Sheet",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit?usp=drivesdk"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
         },
         "sheetName": {
           "__rl": true,
           "value": "gid=0",
           "mode": "list",
           "cachedResultName": "Sheet1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit#gid=0"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -297,17 +297,17 @@
       "parameters": {
         "documentId": {
           "__rl": true,
-          "value": "1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "list",
           "cachedResultName": "Courses Sheet",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit?usp=drivesdk"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
         },
         "sheetName": {
           "__rl": true,
           "value": "gid=0",
           "mode": "list",
           "cachedResultName": "Sheet1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit#gid=0"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
         },
         "options": {}
       },
@@ -340,17 +340,17 @@
       "parameters": {
         "documentId": {
           "__rl": true,
-          "value": "1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "list",
           "cachedResultName": "Courses Sheet",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit?usp=drivesdk"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
         },
         "sheetName": {
           "__rl": true,
           "value": "gid=0",
           "mode": "list",
           "cachedResultName": "Sheet1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c5LzKb_03RqgY_Hg1Z_ARRDs-IUUcSOZmXIlASXAWIw/edit#gid=0"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
         },
         "filtersUI": {
           "values": []
@@ -386,9 +386,9 @@
       "parameters": {
         "calendar": {
           "__rl": true,
-          "value": "alslwsmhmd9@gmail.com",
+          "value": "your.calendar@gmail.com",
           "mode": "list",
-          "cachedResultName": "alslwsmhmd9@gmail.com"
+          "cachedResultName": "your.calendar@gmail.com"
         },
         "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
         "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
@@ -410,9 +410,9 @@
         "operation": "update",
         "calendar": {
           "__rl": true,
-          "value": "alslwsmhmd9@gmail.com",
+          "value": "your.calendar@gmail.com",
           "mode": "list",
-          "cachedResultName": "alslwsmhmd9@gmail.com"
+          "cachedResultName": "your.calendar@gmail.com"
         },
         "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
         "updateFields": {
@@ -433,9 +433,9 @@
         "operation": "getAll",
         "calendar": {
           "__rl": true,
-          "value": "alslwsmhmd9@gmail.com",
+          "value": "your.calendar@gmail.com",
           "mode": "list",
-          "cachedResultName": "alslwsmhmd9@gmail.com"
+          "cachedResultName": "your.calendar@gmail.com"
         },
         "returnAll": true,
         "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
@@ -476,9 +476,9 @@
         "operation": "delete",
         "calendar": {
           "__rl": true,
-          "value": "alslwsmhmd9@gmail.com",
+          "value": "your.calendar@gmail.com",
           "mode": "list",
-          "cachedResultName": "alslwsmhmd9@gmail.com"
+          "cachedResultName": "your.calendar@gmail.com"
         },
         "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
         "options": {}
@@ -642,7 +642,7 @@
         "resource": "speech",
         "voice": {
           "__rl": true,
-          "value": "CwhRBWXzGAHq8TQ4Fs17",
+          "value": "YOUR_VOICE_ID",
           "mode": "list",
           "cachedResultName": "Roger - Laid-Back, Casual, Resonant"
         },
@@ -665,7 +665,7 @@
       "parameters": {
         "operation": "send",
         "phoneNumberId": "1392659607254065",
-        "recipientPhoneNumber": "=+970595883914",
+        "recipientPhoneNumber": "=+970XXXXXXXXX",
         "textBody": "={{ $json.output }}",
         "additionalFields": {}
       },
@@ -702,7 +702,7 @@
       "parameters": {
         "operation": "send",
         "phoneNumberId": "1392659607254065",
-        "recipientPhoneNumber": "=+970595883914",
+        "recipientPhoneNumber": "=+970XXXXXXXXX",
         "textBody": "={{ $json.output }}",
         "additionalFields": {}
       },
@@ -781,7 +781,7 @@
       "parameters": {
         "operation": "send",
         "phoneNumberId": "1392659607254065",
-        "recipientPhoneNumber": "=+970595883914",
+        "recipientPhoneNumber": "=+970XXXXXXXXX",
         "messageType": "document",
         "mediaLink": "={{ $json.URL }}",
         "additionalFields": {
@@ -800,7 +800,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const raw = 'YOUR_BASE64_ENCODED_MOODLE_TOKEN_HERE'; // TODO: replace with your own encoded Moodle wstoken\n\nconst decoded = Buffer.from(decodeURIComponent(raw), 'base64').toString('utf8');\nconst token = decoded.split(':::')[1];\n\nconst call = (wsfunction, params = {}) => this.helpers.httpRequest({\n  method: 'GET',\n  url: 'https://moodle.najah.edu/webservice/rest/server.php',\n  qs: {\n    wstoken: token,\n    wsfunction,\n    moodlewsrestformat: 'json',\n    ...params\n  },\n  json: true,\n});\n\nconst courses = await call('core_enrol_get_users_courses', {\n  userid: 25688\n});\n\nconst out = [];\n\nfor (const c of courses) {\n  const sections = await call('core_course_get_contents', {\n    courseid: c.id\n  });\n\n  for (const sec of sections) {\n    for (const m of (sec.modules || [])) {\n      if (m.modname === 'forum' || m.modname === 'url') continue;\n\n      // تصفية الملفات لتأخذ فقط ملفات الـ PDF\n      const pdfFiles = (m.contents || []).filter(f => \n        f.type === 'file' && f.filename && f.filename.toLowerCase().endsWith('.pdf')\n      );\n\n      // يتجاهل الموديول إذا لم يحتوِ على أي ملف PDF\n      if (pdfFiles.length === 0) continue;\n\n      const t = Math.max(...pdfFiles.map(f => f.timemodified || 0));\n\n      // استخراج أسماء الملفات وروابطها المباشرة مع إضافة التوكن للتحميل المباشر\n      const fileNames = pdfFiles.map(f => f.filename);\n      const fileUrls = pdfFiles.map(f => f.fileurl ? `${f.fileurl}&token=${token}` : '');\n\n      out.push({\n        course: c.fullname,\n        section: sec.name,\n        files: fileNames,\n        // إرجاع الرابط الأول كـ Text أو كمصفوفة في حال وجود أكثر من ملف بالموديول\n        file_url: fileUrls.length === 1 ? fileUrls[0] : fileUrls,\n        date: t\n          ? new Date(t * 1000).toISOString().slice(0, 10)\n          : null,\n        ts: t,\n      });\n    }\n  }\n}\n\n// ترتيب الملفات من الأحدث إلى الأقدم\nout.sort((a, b) => b.ts - a.ts);\n\nreturn out.slice(0, 20).map(item => ({ json: item }));"
+        "jsCode": "const raw = 'REDACTED__PASTE_YOUR_ENCODED_MOODLE_TOKEN_HERE';\n\nconst decoded = Buffer.from(decodeURIComponent(raw), 'base64').toString('utf8');\nconst token = decoded.split(':::')[1];\n\nconst call = (wsfunction, params = {}) => this.helpers.httpRequest({\n  method: 'GET',\n  url: 'https://moodle.najah.edu/webservice/rest/server.php',\n  qs: {\n    wstoken: token,\n    wsfunction,\n    moodlewsrestformat: 'json',\n    ...params\n  },\n  json: true,\n});\n\nconst courses = await call('core_enrol_get_users_courses', {\n  userid: 25688\n});\n\nconst out = [];\n\nfor (const c of courses) {\n  const sections = await call('core_course_get_contents', {\n    courseid: c.id\n  });\n\n  for (const sec of sections) {\n    for (const m of (sec.modules || [])) {\n      if (m.modname === 'forum' || m.modname === 'url') continue;\n\n      // تصفية الملفات لتأخذ فقط ملفات الـ PDF\n      const pdfFiles = (m.contents || []).filter(f => \n        f.type === 'file' && f.filename && f.filename.toLowerCase().endsWith('.pdf')\n      );\n\n      // يتجاهل الموديول إذا لم يحتوِ على أي ملف PDF\n      if (pdfFiles.length === 0) continue;\n\n      const t = Math.max(...pdfFiles.map(f => f.timemodified || 0));\n\n      // استخراج أسماء الملفات وروابطها المباشرة مع إضافة التوكن للتحميل المباشر\n      const fileNames = pdfFiles.map(f => f.filename);\n      const fileUrls = pdfFiles.map(f => f.fileurl ? `${f.fileurl}&token=${token}` : '');\n\n      out.push({\n        course: c.fullname,\n        section: sec.name,\n        files: fileNames,\n        // إرجاع الرابط الأول كـ Text أو كمصفوفة في حال وجود أكثر من ملف بالموديول\n        file_url: fileUrls.length === 1 ? fileUrls[0] : fileUrls,\n        date: t\n          ? new Date(t * 1000).toISOString().slice(0, 10)\n          : null,\n        ts: t,\n      });\n    }\n  }\n}\n\n// ترتيب الملفات من الأحدث إلى الأقدم\nout.sort((a, b) => b.ts - a.ts);\n\nreturn out.slice(0, 20).map(item => ({ json: item }));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1629,10 +1629,8 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "9c482ff1-280f-4a9b-8b22-c393875823f8",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "4385639dd6bb7d17053a44823160b6d49a09604546452e23f6a6e36d148b6a45"
+    "templateCredsSetupCompleted": true
   },
   "nodeGroups": [],
   "id": "3tnQnCs8NX4f5ClM",
