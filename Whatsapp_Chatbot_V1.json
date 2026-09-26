@@ -94,6 +94,16 @@
                 "operation": "exists",
                 "singleValue": true
               }
+            },
+            {
+              "id": "3e4feb48-060b-464d-8354-6c1c08fa60b4",
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].image }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
             }
           ],
           "combinator": "or"
@@ -710,7 +720,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// TODO: ضع التوكن الخاص بك هنا (يفضل جلبه من Credentials أو من متغير بيئة بدلاً من كتابته مباشرة في الكود)\nconst token = 'YOUR_MOODLE_TOKEN_HERE';\n\nconst call = (wsfunction, params = {}) => this.helpers.httpRequest({\n  method: 'GET',\n  url: 'https://moodle.najah.edu/webservice/rest/server.php',\n  qs: {\n    wstoken: token,\n    wsfunction,\n    moodlewsrestformat: 'json',\n    ...params\n  },\n  json: true,\n});\n\nconst courses = await call('core_enrol_get_users_courses', {\n  userid: 25688\n});\n\nconst out = [];\n\nfor (const c of courses) {\n  const sections = await call('core_course_get_contents', {\n    courseid: c.id\n  });\n\n  for (const sec of sections) {\n    for (const m of (sec.modules || [])) {\n      if (m.modname === 'forum' || m.modname === 'url') continue;\n\n      // تصفية الملفات لتأخذ فقط ملفات الـ PDF\n      const pdfFiles = (m.contents || []).filter(f => \n        f.type === 'file' && f.filename && f.filename.toLowerCase().endsWith('.pdf')\n      );\n\n      // يتجاهل الموديول إذا لم يحتوِ على أي ملف PDF\n      if (pdfFiles.length === 0) continue;\n\n      const t = Math.max(...pdfFiles.map(f => f.timemodified || 0));\n\n      // استخراج أسماء الملفات وروابطها المباشرة مع إضافة التوكن للتحميل المباشر\n      const fileNames = pdfFiles.map(f => f.filename);\n      const fileUrls = pdfFiles.map(f => f.fileurl ? `${f.fileurl}&token=${token}` : '');\n\n      out.push({\n        course: c.fullname,\n        section: sec.name,\n        files: fileNames,\n        // إرجاع الرابط الأول كـ Text أو كمصفوفة في حال وجود أكثر من ملف بالموديول\n        file_url: fileUrls.length === 1 ? fileUrls[0] : fileUrls,\n        date: t\n          ? new Date(t * 1000).toISOString().slice(0, 10)\n          : null,\n        ts: t,\n      });\n    }\n  }\n}\n\n// ترتيب الملفات من الأحدث إلى الأقدم\nout.sort((a, b) => b.ts - a.ts);\n\nreturn out.slice(0, 100).map(item => ({ json: item }));"
+        "jsCode": "// تم إزالة التوكن المكشوف. ضع التوكن كمتغير بيئة آمن في n8n\n// (Settings > Environment Variables) باسم MOODLE_WSTOKEN\nconst token = $env.MOODLE_WSTOKEN;\nif (!token) {\n  throw new Error('MOODLE_WSTOKEN environment variable is not set.');\n}\n\nconst call = (wsfunction, params = {}) => this.helpers.httpRequest({\n  method: 'GET',\n  url: 'https://moodle.najah.edu/webservice/rest/server.php',\n  qs: {\n    wstoken: token,\n    wsfunction,\n    moodlewsrestformat: 'json',\n    ...params\n  },\n  json: true,\n});\n\nconst courses = await call('core_enrol_get_users_courses', {\n  userid: 25688\n});\n\nconst out = [];\n\nfor (const c of courses) {\n  const sections = await call('core_course_get_contents', {\n    courseid: c.id\n  });\n\n  for (const sec of sections) {\n    for (const m of (sec.modules || [])) {\n      if (m.modname === 'forum' || m.modname === 'url') continue;\n\n      // تصفية الملفات لتأخذ فقط ملفات الـ PDF\n      const pdfFiles = (m.contents || []).filter(f => \n        f.type === 'file' && f.filename && f.filename.toLowerCase().endsWith('.pdf')\n      );\n\n      // يتجاهل الموديول إذا لم يحتوِ على أي ملف PDF\n      if (pdfFiles.length === 0) continue;\n\n      const t = Math.max(...pdfFiles.map(f => f.timemodified || 0));\n\n      // استخراج أسماء الملفات وروابطها المباشرة مع إضافة التوكن للتحميل المباشر\n      const fileNames = pdfFiles.map(f => f.filename);\n      const fileUrls = pdfFiles.map(f => f.fileurl ? `${f.fileurl}&token=${token}` : '');\n\n      out.push({\n        course: c.fullname,\n        section: sec.name,\n        files: fileNames,\n        // إرجاع الرابط الأول كـ Text أو كمصفوفة في حال وجود أكثر من ملف بالموديول\n        file_url: fileUrls.length === 1 ? fileUrls[0] : fileUrls,\n        date: t\n          ? new Date(t * 1000).toISOString().slice(0, 10)\n          : null,\n        ts: t,\n      });\n    }\n  }\n}\n\n// ترتيب الملفات من الأحدث إلى الأقدم\nout.sort((a, b) => b.ts - a.ts);\n\nreturn out.slice(0, 100).map(item => ({ json: item }));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1618,7 +1628,7 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
@@ -1629,7 +1639,7 @@
     "timeSavedPerExecution": 3,
     "errorWorkflow": "Xc5iRfc4ndHLn6F7"
   },
-  "versionId": "61136888-92d8-4035-a54b-5d1a94b7b245",
+  "versionId": "df980292-6d61-4160-8c2c-71206772b036",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "4385639dd6bb7d17053a44823160b6d49a09604546452e23f6a6e36d148b6a45"
