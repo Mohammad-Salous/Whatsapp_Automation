@@ -7,3 +7,4 @@ A WhatsApp AI bot for students. Handles text, voice, and image messages, fetches
 
 * 📺 **n8n Installation Guide (Short):** [Watch Video Guide](https://youtu.be/lr7b37quIds?si=uSsupLkmZ-hJvm4w)
 * 🎥 **Full Automation Guide Video (30 mins):** [Watch on Google Drive](https://drive.google.com/file/d/1yWorQOgykSGqrEzD8_m5zbi7X9Mbq8Q1/view?usp=drive_link)
+* 💻 **Just Practical Application Video (3 mins):** [Watch on Google Drive](https://drive.google.com/file/d/1ZaTXjtp--XbYXrAMsqTGGz0DxXy4_LdF/view?usp=drive_link)
