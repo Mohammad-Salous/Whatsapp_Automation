@@ -1,6 +1,9 @@
 # WhatsApp_Automation 🚀🚀
 A WhatsApp AI bot for students. Handles text, voice, and image messages, fetches course materials from Moodle, searches the web for answers, and manages Google Calendar events (create, view, update) — all powered by n8n and multiple LLMs (Gemini, Openai) and Openrouter.
 
+> ⚠️ **Important:** You need an [OpenRouter](https://openrouter.ai) account with sufficient credits to run the Chat Model, and a [Gemini](https://ai.google.dev) account to use the remaining features.
+
+
 # 🎬 Automation Video Tutorial
 
 💡 Before downloading the JSON file, please make sure to set up n8n on your device and check out the tutorial resources below:
