@@ -74,3 +74,7 @@ The exported JSON contains **no credentials or secrets**. After importing it int
 5. Connect your Telegram bot tools and the course names Google Sheet.
 6. Activate the workflow and send "Hi" to your WhatsApp number.
 
+# 🎬 Automation Video Tutorial
+
+💡 Before downloading the JSON file, please make sure to set up n8n on your device and check out the tutorial resources below:
+* 📺 **Version 2 Guide :** [Watch Video Guide](https://drive.google.com/drive/folders/1JVfkZWJe1-JDFFtrsPolUp5CZDldUIM5?usp=drive_link)
