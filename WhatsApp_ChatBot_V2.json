@@ -1,0 +1,1436 @@
+{
+  "name": "Whatsapp_chatbot_V1.5_with_tokens",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2832,
+        2736
+      ],
+      "id": "dc79cf99-9867-462c-b1db-b9e055c8e3a2",
+      "name": "WhatsApp Trigger",
+      "webhookId": "88f0429f-4309-4f64-9170-914ab238258e",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.Text }}",
+        "options": {
+          "systemMessage": "=# SYSTEM PROMPT — UNIVERSITY WHATSAPP ASSISTANT\n\nYou are a strict, accurate, concise WhatsApp assistant for university student support: Moodle files, Zajel attendance, web search, and Google Calendar. Never guess, fabricate data, or claim an action succeeded without tool confirmation.\n\n## 1. LANGUAGE & INPUT\n* Reply in the language of the latest user message (mixed → main language; Arabic in Latin letters = Arabic).\n* Voice note ONLY if payload `type == \"audio\"` AND `audio.voice == true`. Everything else (text, images, other audio) is normal; if metadata is missing/unclear, treat as normal text.\n* In confirmed voice notes NEVER include URLs/links (search sources, file links); name sources in plain text. Otherwise links are allowed.\n* Keep replies short, friendly, WhatsApp-ready, with light relevant emojis and WhatsApp bold (*text*).\n* This language rule also applies to all error, \"not found\", and \"no files\" messages: always use the language of the user's latest message, regardless of the language of earlier messages or tool output.\n* EXCEPTION: for anything related to LinkedIn (profile analysis, posts, tips, follow-up questions about the analysis), ALWAYS reply in English only, regardless of the user's language. This overrides the language rule above, including for error and failure messages related to LinkedIn.\n\n## 2. GREETINGS & WELCOME\n* Greeting-only message (مرحبا، أهلا، هلا، hi، hello، hey، كيفك، صباح الخير، marhaba…), a first message with no concrete request (\".\", \"?\", \"start\", lone emoji), or a question about who you are/what you can do (\"مين انت؟\", \"what can you do?\", \"help\") → ALWAYS send the full Welcome template, every single time. IGNORE memory for this decision; never send a shorter reply and never imitate short replies found in memory.\n* Greeting containing \"السلام عليكم\" in any form (سلام عليكم، السلام، salam…):\n  * Greeting-only → send the full Welcome template, preceded by the line `وعليكم السلام ورحمة الله وبركاته 🌷` (EN: `Wa alaykum assalam and peace be upon you 🌷`).\n  * With a concrete request → send only `وعليكم السلام ورحمة الله وبركاته 🌷` + `أهلاً وسهلاً فيك 👋`, then handle the request.\n  * Never say \"وعليكم السلام\" unless the user said السلام.\n* Greeting + concrete request (no السلام) → no Welcome; optionally open with one short word (\"أهلاً 👋\" / \"Hi 👋\") and handle the request.\nCRITICAL: When sending the Welcome, copy the template below CHARACTER BY CHARACTER (same wording, same order, same sections including the \"🆕 *الميزات الجديدة المتاحة:*\" / \"🆕 *New features available:*\" section and the blank lines). NEVER rewrite, reorder, merge, or paraphrase it, and NEVER copy any earlier welcome message from the conversation history, since those are outdated.\n\nWelcome AR:\nأهلاً وسهلاً فيك 👋\nأنا مساعدك الجامعي وإليك أهم الأشياء التي يمكنني ان أساعدك بها:\n📚 إيجاد ملفات المواد وملفات الـ PDF من المودل\n🔍 الإجابة على أسئلتك العامة بالبحث على الإنترنت\n📅 حجز وعرض وتعديل وحذف مواعيدك على الكلندر\n\n🆕 *الميزات الجديدة المتاحة:*\n🎓 بجبلك تلاخيص وأسئلة سنوات ومشاريع المواد من التلجرام\n🕒 عرض الحضور والغياب من الزاجل\n💼 تحليل ملفك الشخصي على لينكد إن وتقييمه وإعطاؤك نصائح للتحسين\n🎬 ارسل لي فيديو (مدته 15-20 دقيقة) وبشرحه وبحلله إلك\n\nكيف بقدر أساعدك اليوم؟ ✨\n\nWelcome EN:\nWelcome! 👋\nI'm your university assistant — here's what I can help you with:\n📚 Find your course files and PDFs from Moodle\n🔍 Answer your general questions using web search\n📅 Book, view, update, and cancel your calendar appointments\n\n🆕 *New features available:*\n🎓 I can get you summaries, past exams, and course projects from Telegram\n🕒 Show your attendance and absence from Zajel\n💼 Analyze your LinkedIn profile, rate it, and give you improvement tips\n🎬 Send me a video (15-20 minutes long) and I'll explain and analyze it for you\n\nHow can I help you today? ✨\n\nKeep the template emojis exactly (one per line, never inside file names, dates, times, or tool data).\n## 3a. MOODLE FILES (LIST)\nTool: `get_moodle_files`.\n* Use it when the user asks to see Moodle files: all files, a specific course's files, or a specific file.\n* Call it once. If the user names a course or file, pass part of its name as input; otherwise leave the input empty.\n* The tool returns courses, each with its `files` (`id`, `name`). NEVER output any link/URL. Show each course name ONCE, with all its files listed under it, then a blank line, then the next course. Never repeat the course name per file and never alter numbers or names. Format:\n\n📂 *الملفات المتاحة:* (EN: *Available files:*)\n\n📘 *{course}*\n*{id}* 📄 {name}\n*{id}* 📄 {name}\n\n📘 *{next course}*\n*{id}* 📄 {name}\n\n* End with: `📥 اكتب رقم الملف (أو عدة أرقام) وأرسله لك` (EN: `📥 Send me the file number(s) and I'll send them to you`).\n* If the result is empty or the tool fails, use the failure template.\n\n## 3b. MOODLE FILES (BY NUMBER)\nTool: `get_files_from_sheet`.\n* Use it when the user asks to download/get file(s) by number: a bare number (\"3\"), several (\"1 و2 و3\", \"بدي 4 و5\"), or \"نزلي/ابعثلي ملف 7\". Do NOT use it for numbers that belong to another context (calendar times, dates, choosing between calendar events, etc.).\n* Pass the numbers as input, e.g. `1,2,3`. Never guess numbers.\n* Your reply must be EXACTLY the tool output: only the links, one per line, in the same order. No greeting, no text, no emojis, no explanation, no formatting.\n* If the output is empty, reply only: `❌ ما لقيت الملفات، تأكد من الأرقام`.\n\n## 3c. TELEGRAM MATERIALS\nTools: `Get Course Names`, then `find_telegram_paths`, then `get_telegram_files`.\n\n* ALWAYS use the Telegram tools (NOT Moodle) when the user asks for any of the following, even without mentioning Telegram:\n  - Summaries / تلاخيص / ملخصات of a course.\n  - Past exams / أسئلة سنوات: quizzes / كويزات, midterm / ميد, final / فاينل.\n  - Course projects / مشاريع المادة.\n* Use the Moodle tools instead ONLY if the user explicitly says Moodle / مودل, or asks to list Moodle files in general.\n* If the tool output looks like JSON (e.g. {\"texts\":[...]}), convert it to plain text: one item per line, real line breaks, no JSON syntax, no brackets or quotes, keeping all links and emojis unchanged.\n\n### Step 1: Resolve the course name (MANDATORY, always first)\n* Before calling `find_telegram_paths`, call `Get Course Names` (the Google Sheet with columns `Course Name` and `Nickname`).\n* Nicknames in column `Nickname` are separated by `\\`. Match the user's wording against the nicknames AND the official names, ignoring spelling variations (ه/ة، أ/ا، ى/ي، digits 1/١، Latin/Arabic letters, e.g. \"ديج 1\" = \"ديجيتال 1\" = \"تصميم دوائر رقمية 1\").\n* Take the official name from the `Course Name` column of the matched row. Never use the nickname in the next step.\n* If the sheet returns no match, try the user's wording as-is. If it matches several different courses (e.g. 1 vs 2) and the user did not specify, ask ONE short question listing the options.\n\n### Step 2: Find the path\n* Call `find_telegram_paths` with \"official course name | material type\" (material type: تلخيص / كويز / ميد / فاينل / مشاريع).\n* If several paths come back, choose the best match for the requested material. If still ambiguous, ask the user ONE short question listing the options (last segment only). Never invent paths.\n\n### Step 3: Get the files\n* Call `get_telegram_files` ONCE with the exact full path chosen.\n* Your reply must be EXACTLY the tool output, unchanged: keep every emoji, line break, and symbol. No added words, greeting, or formatting.\n\n### Not found\n* If the user asked for projects (مشاريع) and none exist: reply `لا يوجد مشاريع لهذه المادة.` (EN: `There are no projects for this course.`)\n* For any other request, if `NOT_FOUND`, an empty result, or no matching files: reply \"no files found\" for the requested material (e.g. `لا يوجد ملخصات لمادة {course}` / `No summaries found for {course}`).\n* LANGUAGE RULE: every \"not found\" or \"no files\" reply MUST be in the language of the user's LATEST message (English message → English reply, Arabic → Arabic). Never default to Arabic.\n* If the tool itself errors, use the standard failure template (also in the user's language).\n\n## 4. ZAJEL ATTENDANCE\nTool: `Attendance and Absence`.\n* Use it when the user asks for anything from Zajel, or for attendance/absence (e.g. \"جبلي الحضور والغياب\", \"جبلي الحضور\", \"جبلي الغياب\", \"كم غياب عندي\", \"my absences\").\n* Call it once with no input. Never invent or alter numbers. If the user asked only for attendance or only for absence, show only the relevant lines.\n* Reorganize the tool output per course in this format (one block per course, blank line between blocks):\n\n🕒 *الحضور والغياب:* (EN: *Attendance & Absence:*)\n\n📘 *{course name}* — شعبة {section} ({credits} ساعات)\n❌ مجموع الغياب: {total} ساعة\n🚫 بدون عذر: {unexcused} | 📝 بعذر: {excused}\n✅ المتبقي المسموح: {remaining} ساعة\n\n* Translate labels to English when replying in English. If the tool returns `login_failed` or fails, use the failure template.\n\n## 5. WEB SEARCH\n* Use the Google/SerpApi tool for factual questions, definitions, how/why, current events, prices, comparisons, general knowledge. Never search greetings or personal calendar info.\n* Search concise core keywords in the language most likely to give reliable results; add the current year for time-sensitive queries; reformulate if results are weak.\n* Synthesize in your own words, note uncertainty/conflicts, never present snippets as a full answer or invent facts.\n* Normally 2–5 sentences, with relevant source URLs (none in confirmed voice notes).\n\n## 6. TIME\n* Sole source of current date/time: `{{ $now.setZone('Asia/Gaza').toString() }}`.\n* All calendar operations and displayed times use Palestine time (`Asia/Gaza`/`Asia/Hebron`, correct DST offset), stated explicitly as Palestine time.\n* Resolve relative dates from the current time. Numeric dates are DD/MM; if the year is omitted use the current year, never silently roll a past date into next year.\n\n## 7. CALENDAR RULES\nUse the calendar tools (get, create, update, delete). Never invent event details or availability.\n\n**Past-time check (before creating/moving, BEFORE any calendar tool call):** reject dates before today and times ≤ now for today. If AM/PM is missing: both interpretations past → reject; only one future → use it; still ambiguous → ask one short question. If rejected, call no tool, show requested vs current time, ask for a future time, never offer an override. Viewing/deleting past events is allowed.\n\n**Search scope:** every `Get many events` call MUST include both `After` and `Before` in a tight window: conflict checks = the requested date 00:00–23:59; viewing = exactly the requested period (if unspecified, a suitable bounded upcoming window); finding events to update/delete = the mentioned date or a reasonable window. If date context is insufficient, ask instead of making an unscoped call.\n\n**Book:** extract date, start time, purpose (ask if missing/ambiguous) → past-time check → scoped conflict check → no conflict: create, confirm only after success.\n* Conflict: STOP, change nothing. Show the existing event's real title/time and ask whether to choose another time or book anyway. Wait for the user's NEXT separate, explicit confirmation. Only then: identify the exact conflicting event and ID, delete it, wait for confirmed success (if deletion fails/unclear, STOP and report), and only after that create the new event; report both actions.\n* Title is mandatory, never empty: the user's purpose; else `بدون عنوان`/`No title` if the user wants none; else `موعد`/`Appointment`. When only rescheduling keep the existing title. Never put the title only in the description.\n\n**View:** list real titles, dates, and times; if none, say the calendar is empty for that period.\n\n**Update/reschedule:** locate the event with a scoped call (if several match, list and ask, never guess) → past-time check on the new time BEFORE updating → scoped conflict check → conflict-free: update (keep the existing title unless asked to change it) and confirm after success; conflict: stop and follow the conflict procedure above.\n\n**Delete:** locate with a scoped call (if several match, list and ask; never delete an unrelated event) → ask explicit confirmation (unless the user already clearly confirmed in this exchange) → delete only after confirmation → confirm only after tool success.\n\n**Safety:** never silently overwrite, double-book, or bypass conflict checks; never call create/delete speculatively while awaiting confirmation. If any tool fails or gives an unclear result, say the action did not complete and ask whether to retry. Never fabricate IDs, names, dates, times, or tool results.\n\n## 8. CALENDAR MESSAGE TEMPLATE\nUse this one template for ALL calendar replies, in the user's language. Include only the lines relevant to the situation, filled with real data only.\n\n{status emoji} *{status}*\n📌 *{title}*\n🗓️ {date}\n⏰ {start} - {end} (بتوقيت فلسطين / Palestine time)\n🗑️ {deleted event: title — date, time} (only when something was deleted)\n{question or note, if any}\n\nStatuses: ✅ booked / تم حجز الموعد · ✅ updated / تم تعديل الموعد · ✅ old removed, new booked / تم حذف الموعد القديم وحجز الجديد · 🗑️ deleted / تم حذف الموعد · ⚠️ conflict with *{existing title}* ({time}) — ask: choose another time or book anyway? / في تعارض مع … هل تختار وقت ثاني ولا أحجز رغم التعارض؟ · ⛔ past time (show requested vs current time, ask for a later one) / ما بقدر أحدد موعد بوقت سابق · 🗑️ delete confirmation (title — date, time; ask yes/no) / تأكيد الحذف (نعم/لا).\nFor a list: `📅 *مواعيدك ({period}):*` then numbered lines `1. *{title}* — {date}, {time}`; if empty: `📅 ما عندك أي مواعيد بهالفترة.` / `📅 You have no appointments for this period.`\nTool failure (any tool): `⚠️ ما قدرت أنفذ الطلب ({action}) — في مشكلة تقنية. تحب أعيد المحاولة؟` / `⚠️ I couldn't complete the request ({action}) — there was a technical problem. Would you like me to try again?`\n\n## 9. VIDEO\nIf the message contains a video (`type == \"video\"`), simply simplify and structure the provided video analysis text: clear, concise, no jargon.\n\n## 10. FINAL CHECK\nBefore every reply confirm: language matches; voice-note link rule applied; all facts come from supplied data or tool results; calendar rules followed; correct template; concise; language matches (English only for LinkedIn).\n\n## 11. LINKEDIN\n* If the user asks to analyze/review/improve their LinkedIn profile or posts, or anything related to LinkedIn, call `linkedin_analyzer` ONCE.\n* Reply in ENGLISH ONLY, even if the user wrote in Arabic.\n* The reply MUST be under 3800 characters. If the tool output is longer, shorten it (drop the least important items, keep *Top 3 Priorities*) without adding Arabic text. Never send more than that.\n* Return the tool output as received (shorten only if it exceeds the limit below). Do NOT translate it or add Arabic text. Keep WhatsApp formatting.\n* If the tool fails or returns empty, reply in English: `⚠️ I couldn't complete the LinkedIn analysis — there was a technical problem. Would you like me to try again?`\n* Never call it for other topics."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -960,
+        2688
+      ],
+      "id": "bcdfbc57-57d3-4ca8-9348-0d6afb65cd63",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "contextWindowLength": 15
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -1104,
+        3296
+      ],
+      "id": "ca79b501-ff78-4436-b52a-f880bc9382f4",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2f34b10b-a990-4e13-b703-c83dc7d27d3f",
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "3e4feb48-060b-464d-8354-6c1c08fa60b4",
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].image }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "e7a75d6d-b598-4520-bb51-1722f75d98eb",
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].video }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -128,
+        2688
+      ],
+      "id": "40689ae7-a4eb-40ea-bdcb-4e5621283a27",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "q": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Search_Query__q_', ``, 'string') }}",
+        "location": "={{ $fromAI('Location__location_', ``, 'string') }}",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-serpapi.serpApiTool",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        3296
+      ],
+      "id": "02de71a3-4dfa-4789-a21e-22a69f0d6c01",
+      "name": "Google search in SerpApi"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Do NOT call this tool directly to book a new appointment. You are STRICTLY FORBIDDEN from calling this tool unless, in this SAME turn, you have already called \"Get many events\" for the exact same date first and confirmed there is no conflicting event at the requested time. If you have not called \"Get many events\" yet for this request, call it first before considering this tool.",
+        "calendar": {
+          "__rl": true,
+          "value": "alslwsmhmd9@gmail.com",
+          "mode": "list",
+          "cachedResultName": "alslwsmhmd9@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -816,
+        3296
+      ],
+      "id": "70a80794-9c78-4131-8e72-9eb6a1a30bbe",
+      "name": "Create an event in Google Calendar"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "alslwsmhmd9@gmail.com",
+          "mode": "list",
+          "cachedResultName": "alslwsmhmd9@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "updateFields": {
+          "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+          "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -496,
+        3296
+      ],
+      "id": "eb3f9f5a-ef69-4c93-9578-f43de23e1583",
+      "name": "Update an event in Google Calendar"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to check the calendar for existing events. ALWAYS provide both \"After\" and \"Before\" parameters as a tight, specific time window — never leave them empty and never omit them, because doing so returns the ENTIRE calendar history which wastes resources and causes errors in identifying the correct event.\n\n- For checking a conflict when booking/rescheduling: set After = the requested date at 00:00 and Before = the requested date at 23:59 (Palestine time, ISO format with +02:00/+03:00 offset).\n- For viewing appointments (\"today\", \"tomorrow\", \"this week\"): set After/Before to match exactly the period the user asked about.\n- For locating a specific event to update or delete: set After/Before to a reasonable window around the date the user mentioned (e.g. that day, or ± a few days if the date is approximate).\n- Never call this tool with Return All enabled and no date range — always scope the search first.",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "alslwsmhmd9@gmail.com",
+          "mode": "list",
+          "cachedResultName": "alslwsmhmd9@gmail.com"
+        },
+        "returnAll": true,
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -656,
+        3296
+      ],
+      "id": "ea64b522-a122-411f-99c4-015a3150a86b",
+      "name": "Get many events in Google Calendar"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "alslwsmhmd9@gmail.com",
+          "mode": "list",
+          "cachedResultName": "alslwsmhmd9@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -336,
+        3296
+      ],
+      "id": "61e6250d-4ccc-4fe9-9de7-b70e49acd57e",
+      "name": "Delete an event in Google Calendar"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "de69e557-430a-4cda-bcc9-93e932db0c8a",
+              "name": "Text",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "a49608f9-add5-4ae7-8adf-126a07db9633",
+              "name": "MY_TOKEN",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "b008a5ce-6aec-494c-8762-9b01eed74bd6",
+              "name": "id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "463dbbf5-c507-44f9-8d75-a446ee775a9a",
+              "name": "pass",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1520,
+        2688
+      ],
+      "id": "41e31f01-0074-45bf-9d12-cefa9409d33e",
+      "name": "Text Processing"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Detect if the original trigger message was a voice note\nconst triggerMessages = $('WhatsApp Trigger').item.json.messages;\nconst isVoice = triggerMessages?.[0]?.type === 'audio';\n\n// 2. Link + emoji cleaning function (only used when isVoice === true)\nfunction cleanText(text) {\n  if (typeof text !== 'string') return text;\n  let result = text\n    .replace(/\\p{Extended_Pictographic}/gu, '')\n    .replace(/[\\u{1F1E6}-\\u{1F1FF}]/gu, '')\n    .replace(/\\u200D/g, '')\n    .replace(/\\uFE0F/g, '');\n\n  if (isVoice) {\n    result = result\n      .replace(/\\[([^\\]]+)\\]\\((?:https?:\\/\\/|www\\.)[^\\s)]+\\)/gi, '$1')\n      .replace(/\\(?\\bhttps?:\\/\\/[^\\s)]+\\)?/gi, '')\n      .replace(/\\(?\\bwww\\.[^\\s)]+\\)?/gi, '')\n      .replace(/\\(?\\b[a-z0-9-]+(?:\\.[a-z0-9-]+)+\\/[^\\s)]*\\)?/gi, '');\n  }\n\n  return result\n    .replace(/[ \\t]{2,}/g, ' ')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\n\n// 3. Apply to the AI's response text field\n// ⚠️ Replace 'output' below with the ACTUAL field name holding the AI reply\nif ($input.item.json && typeof $input.item.json.output === 'string') {\n  $input.item.json.output = cleanText($input.item.json.output);\n}\n\nreturn $input.item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        2864
+      ],
+      "id": "b25b807a-c31f-479f-8d2b-347626e90861",
+      "name": "Edit The Extention"
+    },
+    {
+      "parameters": {
+        "resource": "speech",
+        "voice": {
+          "__rl": true,
+          "value": "CwhRBWXzGAHq8TQ4Fs17",
+          "mode": "list",
+          "cachedResultName": "Roger - Laid-Back, Casual, Resonant",
+          "cachedResultUrl": ""
+        },
+        "text": "={{ $json.output }}",
+        "additionalOptions": {
+          "outputFormat": "opus_48000_128"
+        },
+        "requestOptions": {}
+      },
+      "type": "@elevenlabs/n8n-nodes-elevenlabs.elevenLabs",
+      "typeVersion": 1,
+      "position": [
+        240,
+        2864
+      ],
+      "id": "7e8ecc05-5265-406d-91a0-193d05c77fab",
+      "name": "Convert Text To Speech"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1392659607254065",
+        "recipientPhoneNumber": "=+970595883914",
+        "textBody": "={{ $json.output + \"\\n\\u200B\" }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        2672
+      ],
+      "id": "01a8a318-6e29-42b3-b1ee-53009fec5686",
+      "name": "Send Text",
+      "webhookId": "1b5ebddb-606f-4239-9834-c4a6a6736db5"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1392659607254065",
+        "recipientPhoneNumber": "=+970595883914",
+        "messageType": "audio",
+        "mediaPath": "useMedian8n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        2864
+      ],
+      "id": "21f8a94a-a6d9-4604-a491-b86573874334",
+      "name": "Send Audio",
+      "webhookId": "1b5ebddb-606f-4239-9834-c4a6a6736db5"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.messages[0].audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -2128,
+        2864
+      ],
+      "id": "7eb5464c-4a88-4305-ba51-d3c095d263e9",
+      "name": "Get Audio URL",
+      "webhookId": "690ee42a-b08d-4f22-bb48-4bed0cb413b8"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.messages[0].image.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -2128,
+        3072
+      ],
+      "id": "9866b862-69c2-4118-8bac-0efeaf0134f7",
+      "name": "Get Image URL",
+      "webhookId": "690ee42a-b08d-4f22-bb48-4bed0cb413b8"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1920,
+        2864
+      ],
+      "id": "495ed78b-9dfa-4004-b111-3335c8a24e3d",
+      "name": "Download Audio"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1920,
+        3072
+      ],
+      "id": "7bd2b6ee-9a34-4c92-945b-4c9656d839a5",
+      "name": "Download Image"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-5.2",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1264,
+        3296
+      ],
+      "id": "35bd94f0-5507-46fb-862c-b01a18967c75",
+      "name": "OpenRouter Chat Model"
+    },
+    {
+      "parameters": {
+        "jsCode": "// هذا الكود يغيّر فقط اسم الملف والـ mimeType الظاهر للـ binary\n// ملاحظة مهمة: هذا لا يحوّل الترميز الفعلي (codec) للصوت\n// لازم يتنفذ بعد خطوة تحويل حقيقية (ffmpeg عبر Execute Command أو API تحويل)\n// وإلا واتساب مش هيقدر يشغّل الملف كرسالة صوتية\n\nfor (const item of $input.all()) {\n  if (item.binary && item.binary.data) {\n    // تحديث اسم الملف والامتداد\n    item.binary.data.fileName = 'voice_message.ogg';\n    item.binary.data.fileExtension = 'ogg';\n    // الـ mimeType الصح المطلوب لرسائل الصوت في واتساب\n    item.binary.data.mimeType = 'audio/ogg; codecs=opus';\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        2864
+      ],
+      "id": "000a9c3b-334c-4523-9f05-905a0ce8c1ca",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash",
+          "cachedResultUrl": ""
+        },
+        "text": "قم بتحليل وتلخيص هذا الفيديو/المحاضرة بشكل شامل ومنظم باللغة العربية.\n\nيرجى إخراج النتيجة باتباع الهيكل التالي:\n\n1. **ملخص عام (Overview):** \n   - نظرة عامة موجزة في 2-3 جمل توضح الفكرة الرئيسية للمحاضرة/الفيديو.\n\n2. **أهم المحاور والنقاط الرئيسية (Key Takeaways):**\n   - قائمة بنقاط مختصرة لأبرز ما تم ذكره.\n\n3. **العناوين الرئيسية والشرح التفصيلي (Main Topics & Details):**\n   - لكل موضوع رئيسي تمت مناقشته في الفيديو، ضع عنواناً بارزاً، وتحته شرحاً بسيطاً وواضحاً يغطي المفاهيم والأفكار الأساسية التي تم تناولها.\n\nاحرص على أن يكون الأسلوب واضخاً، سهلاً، ومباشراً دون إطالة غير ضرورية.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -1712,
+        3280
+      ],
+      "id": "bbe596e6-f067-429f-a9d0-aff72ea6728d",
+      "name": "Analyze video"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "4ac8161b-42b9-4beb-bcc8-be3384d4e8d5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b02ce067-e0dc-4a4c-bc0d-80678ced6edc",
+                    "leftValue": "={{ $json.messages[0].audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5113922e-aaab-40b9-bce3-c4b30b519e15",
+                    "leftValue": "={{ $json.messages[0].image }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c8d60e45-d0aa-4ef8-af9d-a9d6ac2a05f5",
+                    "leftValue": "={{ $json.messages[0].video }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "video"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -2384,
+        2704
+      ],
+      "id": "560fab57-fa73-458f-aa59-0606aa705840",
+      "name": "Determine The Input Type"
+    },
+    {
+      "parameters": {
+        "description": "Returns the latest PDF files from all of the student's Moodle courses, sorted newest first. Each item has course, file name, url, and date. Input: leave empty, or a course name to filter.",
+        "jsCode": "const token = $('Text Processing').item.json.MY_TOKEN;\nconst webhookUrl = 'YOUR_APPS_SCRIPT_WEBHOOK_URL';\n\nconst callMoodle = (wsfunction, params = {}) => helpers.httpRequest({\n  method: 'GET',\n  url: 'https://moodle.najah.edu/webservice/rest/server.php',\n  qs: { wstoken: token, wsfunction, moodlewsrestformat: 'json', ...params },\n  json: true,\n  timeout: 15000,\n});\n\nconst keyOf = u => String(u).split('&token=')[0].split('?token=')[0];\n\nconst [existingData, coursesRes] = await Promise.all([\n  helpers.httpRequest({ method: 'GET', url: webhookUrl, json: true, timeout: 15000 })\n    .catch(() => ({ items: [], lastId: 0 })),\n  callMoodle('core_enrol_get_users_courses', { userid: 25688 }).catch(() => []),\n]);\n\n// رقم كل ملف موجود في الشيت\nconst idByKey = new Map((existingData.items || []).map(([u, id]) => [keyOf(u), id]));\nlet currentId = existingData.lastId || 0;\nconst courses = Array.isArray(coursesRes) ? coursesRes : [];\n\nconst allContents = await Promise.all(\n  courses.map(c =>\n    callMoodle('core_course_get_contents', { courseid: c.id })\n      .then(r => [c, Array.isArray(r) ? r : []])\n      .catch(() => [c, []])\n  )\n);\n\nconst files = [];\nfor (const [course, sections] of allContents) {\n  for (const sec of sections) {\n    for (const m of (sec.modules || [])) {\n      if (m.modname === 'forum' || m.modname === 'url') continue;\n      for (const f of (m.contents || [])) {\n        if (f.type === 'file' && f.filename?.toLowerCase().endsWith('.pdf')) {\n          files.push({\n            name: f.filename,\n            course: course.fullname,\n            ts: f.timemodified || 0,\n            fileurl: f.fileurl,\n          });\n        }\n      }\n    }\n  }\n}\nfiles.sort((a, b) => b.ts - a.ts);\n\nconst currentTime = new Date().toISOString().replace('T', ' ').slice(0, 19);\nconst newRows = [];\nconst list = [];\n\nfor (const f of files) {\n  let id = idByKey.get(keyOf(f.fileurl));\n  if (id === undefined) {\n    id = ++currentId;\n    newRows.push([f.name, f.course, '', `${f.fileurl}&token=${token}`, id, currentTime]);\n  }\n  list.push({ id, course: f.course, name: f.name });\n}\n\nif (newRows.length > 0) {\n  await helpers.httpRequest({\n    method: 'POST', url: webhookUrl, body: { values: newRows }, json: true, timeout: 15000,\n  }).catch(() => {});\n}\n\n// فلتر اختياري باسم المادة أو الملف\nconst q = String(typeof query === 'string' ? query : '').trim().toLowerCase();\nconst filtered = q\n  ? list.filter(x => x.course.toLowerCase().includes(q) || x.name.toLowerCase().includes(q))\n  : list;\n\nconst grouped = {};\nfor (const x of filtered.slice(0, 60)) {\n  (grouped[x.course] = grouped[x.course] || []).push({ id: x.id, name: x.name });\n}\n\nreturn JSON.stringify(\n  Object.entries(grouped).map(([course, files]) => ({ course, files }))\n);"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        -160,
+        3296
+      ],
+      "id": "76e77b8f-cf48-409b-a8d1-d2b9f2d7e3d8",
+      "name": "get_moodle_files"
+    },
+    {
+      "parameters": {
+        "description": "Returns the student's attendance and absence data for all current courses from Zajel (the university portal): total absence hours, unexcused hours, excused hours, and remaining allowed absence hours per course. Use when the user asks about attendance, absence, or anything from Zajel. No input needed.",
+        "jsCode": "const { id: ID, pass: PASS } = $('Text Processing').first().json;\nconst BASE = \"https://zajeles.najah.edu\";\nconst store = $getWorkflowStaticData(\"global\");\nif (!ID || !PASS) return `missing creds: id=${!!ID} pass=${!!PASS}`;\n// ---- كوكيز ----\nstore.jar = store.jar || {};\nconst jar = store.jar;\n\nconst saveCookies = (res) => {\n  const h = res.headers || {};\n  for (const line of [].concat(h[\"set-cookie\"] || [])) {\n    const pair = line.split(\";\")[0];\n    const i = pair.indexOf(\"=\");\n    if (i > 0) jar[pair.slice(0, i).trim()] = pair.slice(i + 1).trim();\n  }\n};\nconst cookieHeader = () =>\n  Object.entries(jar).map(([k, v]) => `${k}=${v}`).join(\"; \");\n\nconst request = async (path, method = \"GET\", body) => {\n  const res = await helpers.httpRequest({\n    url: BASE + path,\n    method,\n    headers: {\n      Cookie: cookieHeader(),\n      \"User-Agent\": \"Mozilla/5.0\",\n      Referer: BASE + \"/servlet/start\",\n      ...(body !== undefined\n        ? { \"Content-Type\": \"application/x-www-form-urlencoded\" }\n        : {}),\n    },\n    body,\n    encoding: \"arraybuffer\",\n    json: false,\n    returnFullResponse: true,\n    ignoreHttpStatusCode: true,\n    timeout: 15000,\n  });\n  saveCookies(res);\n  return new TextDecoder(\"windows-1256\").decode(Buffer.from(res.body));\n};\n\n// ---- تحليل الجدول ----\nconst clean = (s) =>\n  s.replace(/<[^>]*>/g, \" \").replace(/&nbsp;/g, \" \").replace(/&amp;/g, \"&\")\n   .replace(/\\s+/g, \" \").trim();\n\nconst parse = (html) => {\n  const courses = [];\n  const rowRe = /<tr[^>]*>([\\s\\S]*?)<\\/tr>/gi;\n  let r;\n  while ((r = rowRe.exec(html))) {\n    const cells = [];\n    const cellRe = /<t[hd][^>]*>([\\s\\S]*?)<\\/t[hd]>/gi;\n    let c;\n    while ((c = cellRe.exec(r[1]))) cells.push(clean(c[1]));\n\n    if (cells.length >= 15 && /^\\d{8}$/.test(cells[0])) {\n      const credits = Number(cells[4]);\n      const total = Number(cells[12]);\n      const excused = Number(cells[13]);\n      courses.push({\n        name: \"اسم المساق : \" + cells[3],\n        section: \"رقم الشعبة : \" + (cells[1] ? (cells[1].split(\"/\")[1] || \"\") : \"\"),\n        credits: \"وزن المساق : \" + cells[4],\n        absenceHours: \"مجموع ساعات الغياب : \" + cells[12],\n        unexcused: \"ساعات الغياب بدون عذر : \" + (total - excused),\n        excused: \"ساعات الغياب بعذر : \" + cells[13],\n        rest: \"ساعات الغياب المسموح بها المتبقية : \" + (credits * 4 - total),\n      });\n    }\n  }\n  return courses;\n};\n\nconst getCourses = async () =>\n  parse(await request(\"/servlet/program\", \"POST\", \"cou=68\"));\n\nconst login = async () => {\n  for (const k of Object.keys(jar)) delete jar[k];\n  await request(\"/servlet/ZajelGate\", \"POST\", `startDate=&liun=${ID}`);\n  await request(\"/servlet/ZajelGt\", \"POST\", `gsw=${encodeURIComponent(PASS)}`);\n  await request(\"/servlet/login\", \"POST\", `startDate=${Date.now()}`);\n  await request(\"/servlet/mainN\");\n  await request(\"/servlet/start\");\n};\n\n// ---- 1) جرّب الكوكيز المخزّنة ----\nlet courses = Object.keys(jar).length ? await getCourses() : [];\n\n// ---- 2) انتهت الجلسة؟ سجّل دخولك من جديد ----\nif (!courses.length) {\n  await login();\n  courses = await getCourses();\n}\n\nif (!courses.length) {\n  return \"login_failed: could not fetch attendance data.\";\n}\n\nreturn courses.map(j =>\n  `${j.name} , ${j.section} , ${j.credits}\\n` +\n  `${j.absenceHours} , ${j.rest}\\n` +\n  `${j.unexcused} , ${j.excused}`\n).join(\"\\n-----------------------------------\\n\");"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        3296
+      ],
+      "id": "8e9ad744-c768-428a-a5ca-c63a4f5207f0",
+      "name": "Attendance and Absence"
+    },
+    {
+      "parameters": {
+        "description": "Returns download links of Moodle files by their numbers (IDs). Input: the file numbers from the user's message, e.g. \"1,2,3\" or \"3\".",
+        "jsCode": "const webhookUrl = 'YOUR_APPS_SCRIPT_WEBHOOK_URL';\n\n// تحويل الأرقام العربية إلى لاتينية\nconst normalize = s => String(s ?? '').replace(/[\\u0660-\\u0669]/g, d => String(d.charCodeAt(0) - 0x0660));\n\n// استخراج الأرقام بدون تكرار + ترتيب تصاعدي\nconst ids = [...new Set(\n  (normalize(typeof query === 'string' ? query : JSON.stringify(query)).match(/\\d+/g) || [])\n    .map(Number)\n    .filter(n => n > 0)\n)].sort((a, b) => a - b).slice(0, 15);\n\nif (!ids.length) return '';\n\nconst res = await helpers.httpRequest({\n  method: 'GET',\n  url: webhookUrl,\n  qs: { ids: ids.join(',') },\n  json: true,\n  timeout: 15000,\n}).catch(() => null);\n\nif (!res || !res.files) return '';\n\n// الروابط فقط، مرتبة حسب الرقم، كل رابط في سطر\nreturn res.files\n  .sort((a, b) => a.id - b.id)\n  .map(f => f.url)\n  .filter(Boolean)\n  .join('\\n');"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        176,
+        3296
+      ],
+      "id": "7efd79c8-a1fd-4deb-aa06-4dee4f7709ab",
+      "name": "get_files_from_sheet"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "={{ $('WhatsApp Trigger').item.json.messages[0].image.caption }}",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -1712,
+        3072
+      ],
+      "id": "fce4d2e6-cfcb-4d6e-baf3-c9031631dd01",
+      "name": "Analyze image"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1920,
+        3280
+      ],
+      "id": "697b2b49-9000-4e67-b37a-4837859b1dcc",
+      "name": "Download Video"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.messages[0].video.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -2128,
+        3280
+      ],
+      "id": "00305753-60fb-4867-ad69-42f2662bd19d",
+      "name": "Get Video URL",
+      "webhookId": "690ee42a-b08d-4f22-bb48-4bed0cb413b8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9dc46e3a-95a9-4eba-8b8b-d706eb24afec",
+              "name": "Text",
+              "value": "=# the author provided the video and the text \n\n## User's Caption\n{{ $('WhatsApp Trigger').item.json.messages[0].video.caption || '' }}\n\n## image description\n{{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1520,
+        3280
+      ],
+      "id": "211de784-29c3-4899-b10e-c0a8f2da97e1",
+      "name": "Video Processing"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9dc46e3a-95a9-4eba-8b8b-d706eb24afec",
+              "name": "Text",
+              "value": "=# the author provided the image and the text \n\n## User's Caption\n{{ $('WhatsApp Trigger').item.json.messages[0].image.caption || '' }}\n\n## image description\n{{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1520,
+        3072
+      ],
+      "id": "27fcb3db-4156-4965-9c5b-a7a656f3011b",
+      "name": "Image Processing"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9dc46e3a-95a9-4eba-8b8b-d706eb24afec",
+              "name": "Text",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "8d23d104-33e3-44b5-ba47-c180eae48254",
+              "name": "=",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1520,
+        2864
+      ],
+      "id": "7d2559c6-d47e-4532-9cce-b2a86a95a4c8",
+      "name": "Audio Processing"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-flash-lite-latest",
+          "mode": "list",
+          "cachedResultName": "models/gemini-flash-lite-latest"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -1712,
+        2864
+      ],
+      "id": "c667d0a8-2029-456d-85d2-38ae2ee525b3",
+      "name": "Transcribe a recording",
+      "retryOnFail": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "description": "Finds Telegram material paths. Input: \"course | material type\", e.g. \"نظم قواعد البيانات | سلايدات\". Use the official course name. The material part is optional. Returns matching full paths.",
+        "jsCode": "const BASE = 'http://host.docker.internal:8000';\n\n// تطبيع: إزالة التشكيل والإيموجي وتوحيد الحروف\nconst norm = s => String(s ?? '')\n  .replace(/[\\u064B-\\u0652\\u0640]/g, '')\n  .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')\n  .replace(/[^\\p{L}\\p{N}\\s>]/gu, ' ')\n  .replace(/\\s+/g, ' ').toLowerCase().trim();\n\nconst raw = await helpers.httpRequest({\n  method: 'GET', url: BASE + '/paths', json: true, timeout: 15000,\n}).catch(() => null);\n\nif (!raw) return 'ERROR: paths request failed';\n\n// يدعم مصفوفة نصوص أو كائناً مفاتيحه هي المسارات\nconst list = Array.isArray(raw) ? raw : (raw.paths || []);\nconst paths = list\n  .map(p => (typeof p === 'string' ? p : p?.path))\n  .filter(Boolean);\n\nconst parts = String(typeof query === 'string' ? query : '')\n  .split('|').map(norm).filter(Boolean);\n\nconst match = (list, ps) => list.filter(p => ps.every(x => norm(p).includes(x)));\n\nlet res = match(paths, parts);\nif (!res.length && parts.length > 1) res = match(paths, [parts[0]]); // جرّب المادة فقط\n\nif (!res.length) return 'NOT_FOUND';\nreturn JSON.stringify(res.slice(0, 15));"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        3296
+      ],
+      "id": "1e9f0129-fde0-4851-904e-d2a05b6649ad",
+      "name": "find_telegram_paths"
+    },
+    {
+      "parameters": {
+        "description": "Sends the chosen path to the Telegram bot and returns its reply. Input: ONE exact full path copied from find_telegram_paths. Never modify it.",
+        "jsCode": "const BASE = 'http://host.docker.internal:8000';\n\nconst full = String(typeof query === 'string' ? query : '').trim();\nif (!full) return 'ERROR: empty path';\n\n// آخر جزء من المسار بإيموجيه كما هو\nconst label = full.split('>').pop().trim();\n\nconst res = await helpers.httpRequest({\n  method: 'POST',\n  url: BASE + '/run',\n  body: { path: [label] },   // مصفوفة بعنصر واحد\n  json: true,\n  timeout: 60000,\n}).catch(e => ({ __error: String(e.message || e).slice(0, 300) }));\n\nif (res === null || res === undefined) return 'ERROR: empty response';\nif (res.__error) return 'ERROR: ' + res.__error;\nreturn typeof res === 'string' ? res : JSON.stringify(res);"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        736,
+        3296
+      ],
+      "id": "c82c4f60-49dd-462b-a503-020d6c94e0b2",
+      "name": "get_telegram_files"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1392659607254065",
+        "recipientPhoneNumber": "=+970595883914",
+        "textBody": "={{ \"سيتم تحليل رسالتك\" + \"\\n\" + \"يرجى الانتظار🕒...\" + \"\\n\\u200B\" }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -2384,
+        2528
+      ],
+      "id": "86b1a4d8-338a-473a-a566-ee41b4496240",
+      "name": "Send Text1",
+      "webhookId": "1b5ebddb-606f-4239-9834-c4a6a6736db5",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fe7a84ff-8851-4c2f-97e8-59625f11d0a6",
+              "leftValue": "={{ $json.messages[0] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2656,
+        2544
+      ],
+      "id": "37e03a2d-5773-4e8a-9817-9cc484387812",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1E875o4I0S5Q4relcPOjosf2cKLeZ0Xn8ZwgrsIxwF2Y",
+          "mode": "list",
+          "cachedResultName": "Course Names",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1E875o4I0S5Q4relcPOjosf2cKLeZ0Xn8ZwgrsIxwF2Y/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1E875o4I0S5Q4relcPOjosf2cKLeZ0Xn8ZwgrsIxwF2Y/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        368,
+        3296
+      ],
+      "id": "21bb924c-5912-4b1a-8f0b-694d477baec4",
+      "name": "Get Course Names"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        864,
+        3440
+      ],
+      "id": "1325d16e-6470-49ed-9ae9-a63fd9b43777",
+      "name": "OpenRouter Chat Model4"
+    },
+    {
+      "parameters": {
+        "toolDescription": "=  Analyzes the user's LinkedIn profile and posts and returns improvement recommendations. Call it when the user asks to review, analyze, or improve their LinkedIn profile or posts. Takes no input needed.",
+        "text": "=  {{ $fromAI('request', 'The user request about their LinkedIn profile', 'string') }}",
+        "options": {
+          "systemMessage": "=You are a senior LinkedIn profile strategist. Analyze the user's LinkedIn profile and posts, and return only what needs improvement.\n\n## Input\nCall `get_linkedin_profile` and `get_linkedin_posts` once each to fetch the data, then analyze it. If a tool returns empty data or an error, say so clearly and never invent content. If only one tool fails, analyze what you have and state what is missing.\n\n## Analyze every section literally, using the exact text found\nHeadline, About, Experience (titles, descriptions, achievements), Education, Skills, Projects, Certifications, Courses, Featured, Honors & Awards, Cover/Photo (if detectable), Custom URL, Recent Posts.\n\nFor each profile section evaluate: clarity, keywords for the target role, measurable results, consistency, tone, grammar, and completeness.\nIf a standard section is empty, recommend adding it. Use `sectionTotals` in the profile data to confirm that a section is truly empty.\n\n## Posts analysis\nEvaluate each of the user's own posts: hook (first line), structure, length, value to the reader, tone, hashtags, call-to-action, and topic consistency. Ignore reposts (not the user's own writing).\n\n## Output rules\n- Reply in ENGLISH ONLY, regardless of the language of the user's message. Never use Arabic or any other language, including when quoting: if the profile text is in Arabic, keep the quote as-is but write all your own text in English.\n- Include ONLY sections or posts that need improvement. If a section or the posts are already good, omit them completely and do not mention them.\n- For each item needing improvement, use this format:\n  *{Section}*\n  ❌ Current: {exact quote, shortened if long}\n  ⚠️ Problem: {one sentence}\n  ✅ Suggested: {improved rewrite or concrete action}\n- End with *Top 3 Priorities* (the three highest-impact changes).\n- Be specific and concise. No generic advice, no praise filler, no fabricated data.\n- HARD LIMIT: the entire answer MUST be under 3500 characters including spaces (WhatsApp rejects messages over 4096). Count before sending. If it would exceed the limit, shorten: keep only the 4 highest-impact items, one sentence per field, and shorten quotes to under 15 words.\n- Use real line breaks (never the literal characters \\n). Use WhatsApp formatting (*bold*), no markdown headers or tables."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        912,
+        3280
+      ],
+      "id": "7dbb0d6b-5356-4629-abb4-b8c8537449be",
+      "name": "linkedin_analyzer"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Fetches the user's LinkedIn profile data (headline, about, experience, education, skills).",
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/harvestapi~linkedin-profile-scraper/run-sync-get-dataset-items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"profileScraperMode\":\"Profile details no email ($4 per 1k)\",\"queries\":[\"https://www.linkedin.com/in/mohammadmsalous\"]}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        1072,
+        3440
+      ],
+      "id": "dab9f6b4-f503-4875-83e9-22c4c4c11af2",
+      "name": "get_linkedin_profile"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Fetches the user's recent LinkedIn posts with content and engagement.",
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/harvestapi~linkedin-profile-posts/run-sync-get-dataset-items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "  {\"targetUrls\":[\"https://www.linkedin.com/in/mohammadmsalous\"],\"maxPosts\":15,\"includeReposts\":false}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        1264,
+        3440
+      ],
+      "id": "968524ea-32a5-406f-80be-6bd11496ee5f",
+      "name": "get_linkedin_posts"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Determine The Input Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit The Extention",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google search in SerpApi": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Processing": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit The Extention": {
+      "main": [
+        [
+          {
+            "node": "Convert Text To Speech",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Text To Speech": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Audio URL": {
+      "main": [
+        [
+          {
+            "node": "Download Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image URL": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze video": {
+      "main": [
+        [
+          {
+            "node": "Video Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine The Input Type": {
+      "main": [
+        [
+          {
+            "node": "Text Processing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Audio URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Video URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_moodle_files": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attendance and Absence": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_files_from_sheet": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Image Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Analyze video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video URL": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Processing": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Processing": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio Processing": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Audio Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find_telegram_paths": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_telegram_files": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send Text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Course Names": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "linkedin_analyzer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "linkedin_analyzer": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_linkedin_profile": {
+      "ai_tool": [
+        [
+          {
+            "node": "linkedin_analyzer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_linkedin_posts": {
+      "ai_tool": [
+        [
+          {
+            "node": "linkedin_analyzer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "d75838d4-aa22-4779-aad0-fedcd3e97616",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "nodeGroups": [],
+  "id": "AILjwjFUid5xb3c7",
+  "tags": []
+}
