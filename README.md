@@ -48,6 +48,13 @@ The bot talks to a dedicated Telegram bot that stores materials for Computer Eng
 - If a course has no projects or files, the bot tells you in the language you wrote in.
 > Example: "send me digital 1 summaries"
 
+### 🤖 Telegram Bridge (`server.js`)
+A small Node.js server (Express + GramJS) logs in to Telegram as a regular user and talks to the course materials bot on the student's behalf.
+- `GET /tree` crawls all menus of the Telegram bot and saves every path (e.g. `Courses > Digital 1 > Summaries`) to `bot_tree.json`.
+- `GET /paths` returns the saved paths, used by the `find_telegram_paths` tool.
+- `POST /run` follows a path by pressing the buttons in order and returns the files, used by the `get_telegram_files` tool.
+- Requests are processed one at a time (a lock) because the Telegram bot keeps the menu state of the conversation.
+
 ### 🎬 Long Video Analysis (15–20 minutes)
 Send a video and the bot analyzes it with Gemini, then replies with a short summary, key points, and a takeaway. It works well for lectures and tutorials.
 > Note: WhatsApp Cloud API limits media files to about 16 MB, so very long videos must be compressed or low quality to be accepted.
