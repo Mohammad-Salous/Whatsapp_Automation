@@ -68,7 +68,7 @@ A dedicated LinkedIn sub-agent reviews your profile and recent posts and returns
 - **~30% faster** automation: unnecessary waiting messages are skipped, and Meta's status events are filtered out before they reach the agent.
 - **~15% fewer tokens** used per request, thanks to a cleaner, more compact system prompt and smaller tool outputs.
 - **Improved error handling:** errors were reduced by ~20%, and every failure now returns a clear message in the user's language.
-- **~40% higher productivity** for bot users: students get attendance, course materials, video summaries, and LinkedIn feedback in one chat, instead of switching between Zajel, Moodle, Telegram, and other tools.
+- **~35% higher productivity** for bot users: students get attendance, course materials, video summaries, and LinkedIn feedback in one chat, instead of switching between Zajel, Moodle, Telegram, and other tools.
 
 # 🔑 Setup for Version 2
 
